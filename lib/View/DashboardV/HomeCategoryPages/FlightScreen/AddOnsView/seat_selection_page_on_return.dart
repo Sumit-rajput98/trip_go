@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:trip_go/Model/FlightM/flight_SSR_model_lcc.dart';
-
+import '../../../../../Model/FlightM/flight_SSR_round_model.dart';
 import '../../../../../ViewM/FlightVM/seat_selection_provider_round.dart';
 
 class SeatSelectionPageOnReturn extends StatefulWidget {
   Map<String, dynamic>? fare;
-  final Data? flightSsrRes;
+  final Data1? flightSsrRes;
   final int? adultCount;
+  final int? childrenCount;
+  final int? infantsCount;
   final bool isReturn;
-  SeatSelectionPageOnReturn({super.key, this.flightSsrRes, this.adultCount, this.fare, required this.isReturn});
+  SeatSelectionPageOnReturn({super.key, this.flightSsrRes, this.adultCount, this.childrenCount, this.infantsCount, this.fare, required this.isReturn});
 
   @override
   State<SeatSelectionPageOnReturn> createState() => _SeatSelectionPageOnReturnState();
@@ -52,8 +53,9 @@ class _SeatSelectionPageOnReturnState extends State<SeatSelectionPageOnReturn> {
       for (final segmentSeat in seatDynamic.segmentSeat) {
         for (final rowSeat in segmentSeat.rowSeats) {
           for (final seat in rowSeat.seats) {
-            if (seat.availablityType == 0 || seat.availablityType == 5)
+            if (seat.availablityType == 0 || seat.availablityType == 5) {
               continue; // Skip hidden seats
+            }
 
             apiSeatMap[seat.code] = seat;
 
@@ -141,7 +143,7 @@ class _SeatSelectionPageOnReturnState extends State<SeatSelectionPageOnReturn> {
 
             // Print total price after removal
             print('Total Seat Price after removal: ₹${seatProvider.totalPrice}');
-          } else if (selectedSeats.length < widget.adultCount!) {
+          } else if (selectedSeats.length < (widget.adultCount ?? 0) + (widget.childrenCount ?? 0)) {
             selectedSeats.add(seatId);
             final seat = apiSeatMap[seatId];
             if (seat != null) {

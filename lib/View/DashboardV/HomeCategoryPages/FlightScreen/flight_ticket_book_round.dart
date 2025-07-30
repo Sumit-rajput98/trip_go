@@ -8,6 +8,8 @@ import 'FlightWidgets/booking_success_page_round.dart';
 import 'booking_success_page.dart';
 
 class FlightTicketBookRound extends StatefulWidget {
+  final bool isLcc;
+  final bool isLccIb;
   final String email;
   final String selectedOnwardResultIndex;
   final String selectedReturnResultIndex;
@@ -20,11 +22,15 @@ class FlightTicketBookRound extends StatefulWidget {
   int? paymentPrice;
   final String? companyName;
   final String? regNo;
+  final Map<String, dynamic>? baggageDynamicData;
+  final Map<String, dynamic>? mealDynamicData;
 
   FlightTicketBookRound({
     super.key,
     this.fare,
     this.fare2,
+    required this.isLcc,
+    required this.isLccIb,
     required this.selectedOnwardResultIndex, // ✅
     required this.selectedReturnResultIndex, // ✅
     this.resultIndex,
@@ -33,6 +39,8 @@ class FlightTicketBookRound extends StatefulWidget {
     required this.email,
     required this.travellers,
     required this.seatDynamicData,
+    this.baggageDynamicData,
+    this.mealDynamicData,
     this.companyName,
     this.regNo,
   });
@@ -85,7 +93,7 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
   void _openCheckout() {
     print("Start razorPay");
     var options = {
-      'key': 'rzp_test_2lgdj3701kwk9T', // Use your test or live key here
+      'key': 'rzp_test_UM98zYeUGiVBLw', // Use your test or live key here
       'amount': widget.paymentPrice! * 100, // Amount in paise (₹100 = 10000)
       'currency': 'INR',
       'name': 'TripGo Online',
@@ -121,6 +129,7 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
   }
 
   Future<void> _bookFlight() async {
+    // Parse onward and return seats
     final onwardSeats = (widget.seatDynamicData['SeatDynamic'] as List<dynamic>).map((item) {
       return SeatDynamic(
         airlineCode: item['AirlineCode'] ?? '',
@@ -162,6 +171,48 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
         price: (item['Price'] as num?)?.toDouble() ?? 0.0,
       );
     }).toList();
+
+    final onwardBaggage = (widget.baggageDynamicData?['BaggageDynamic'] as List<dynamic>? ?? [])
+        .map((item) => Baggage.fromJson(item))
+        .toList();
+
+    final returnBaggage = (widget.baggageDynamicData?['BaggageDynamicIB'] as List<dynamic>? ?? [])
+        .map((item) => Baggage.fromJson(item))
+        .toList();
+
+    final onwardMeals = (widget.mealDynamicData?['MealDynamic'] as List<dynamic>? ?? [])
+        .map((item) => MealDynamic(
+      airlineCode: item['AirlineCode'] ?? '',
+      flightNumber: item['FlightNumber'] ?? '',
+      wayType: item['WayType'] ?? 1,
+      code: item['Code'] ?? '',
+      description: item['Description'] ?? 0,
+      airlineDescription: item['AirlineDescription']?.toString() ?? '',
+      quantity: item['Quantity'] ?? 1,
+      currency: item['Currency'] ?? '',
+      price: (item['Price'] as num?)?.toDouble() ?? 0.0,
+      origin: item['Origin'] ?? '',
+      destination: item['Destination'] ?? '',
+    ))
+        .toList();
+
+    final returnMeals = (widget.mealDynamicData?['MealDynamicIB'] as List<dynamic>? ?? [])
+        .map((item) => MealDynamic(
+      airlineCode: item['AirlineCode'] ?? '',
+      flightNumber: item['FlightNumber'] ?? '',
+      wayType: item['WayType'] ?? 2,
+      code: item['Code'] ?? '',
+      description: item['Description'] ?? 0,
+      airlineDescription: item['AirlineDescription']?.toString() ?? '',
+      quantity: item['Quantity'] ?? 1,
+      currency: item['Currency'] ?? '',
+      price: (item['Price'] as num?)?.toDouble() ?? 0.0,
+      origin: item['Origin'] ?? '',
+      destination: item['Destination'] ?? '',
+    ))
+        .toList();
+
+    // Parse Passengers
     final passengers = widget.travellers.asMap().entries.map((entry) {
       int index = entry.key;
       Traveller traveller = entry.value;
@@ -178,12 +229,12 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
         passportExpiry: "2026-12-06",
         fare: Fare.fromJson(widget.fare!),
         fareIb: Fare.fromJson(widget.fare2!),
-        seatDynamic: onwardSeats[index],
-        seatDynamicIb: returnSeats[index],
-        baggage: onwardBaggage.isNotEmpty ? onwardBaggage[index] : Baggage.empty(),
-        baggageIb: returnBaggage.isNotEmpty ? returnBaggage[index] : Baggage.empty(),
-        mealDynamic: onwardMeals.isNotEmpty ? onwardMeals[index] : MealDynamic.empty(),
-        mealDynamicIb: returnMeals.isNotEmpty ? returnMeals[index] : MealDynamic.empty(),
+        seatDynamic: index < onwardSeats.length ? [onwardSeats[index]] : [],
+        seatDynamicIb: index < returnSeats.length ? [returnSeats[index]] : [],
+        baggage: index < onwardBaggage.length ? [onwardBaggage[index]] : [],
+        baggageIb: index < returnBaggage.length ? [returnBaggage[index]] : [],
+        mealDynamic: index < onwardMeals.length ? [onwardMeals[index]] : [],
+        mealDynamicIb: index < returnMeals.length ? [returnMeals[index]] : [],
         city: "Gurgaon",
         countryCode: "IN",
         countryName: "India",
@@ -201,7 +252,13 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
       );
     }).toList();
 
+    // Create ticket request
     final flightTicketRequest = FlightTicketRequestRound(
+      userEmail:"support@eweblink.net",
+      userPhone: "9310167293",
+      isLcc: widget.isLcc,
+      isLccIb: widget.isLccIb,
+      type: "app",
       traceId: widget.traceId ?? "",
       resultIndex: widget.selectedOnwardResultIndex ?? "",
       passengers: passengers,
@@ -210,6 +267,7 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
 
     await viewModel.bookFlight(flightTicketRequest);
 
+    // Handle response
     if (viewModel.response != null && viewModel.response!.success) {
       pnr = viewModel.response!.data.response.pnr;
       bookingId = viewModel.response!.data.response.bookingId;
@@ -217,42 +275,31 @@ class _FlightTicketBookRoundState extends State<FlightTicketBookRound> {
       pnrIb = viewModel.response!.data.inbound.response.pnr;
       bookingIdIb = viewModel.response!.data.inbound.response.bookingId;
 
-      print('pnr (onward): $pnr');
-      print('bookingId (onward): $bookingId');
-      print('traceId: $traceId');
-      print('pnrIb (inbound): $pnrIb');
-      print('bookingIdIb (inbound): $bookingIdIb');
-
       setState(() {
         pnr = viewModel.response!.data.response.pnr;
         bookingId = viewModel.response!.data.response.bookingId;
         traceId = viewModel.response!.data.traceId;
         pnrIb = viewModel.response!.data.inbound.response.pnr;
         bookingIdIb = viewModel.response!.data.inbound.response.bookingId;
-
-        // Debug prints
-        print('pnr (onward): $pnr');
-        print('bookingId (onward): $bookingId');
-        print('traceId: $traceId');
-        print('pnrIb (inbound): $pnrIb');
-        print('bookingIdIb (inbound): $bookingIdIb');
       });
-      if(mounted)
+
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => BookingSuccessPageRound(
               pnr: pnr!,
               traceId: traceId!,
-              bookingId: bookingId, paymentPrice: widget.paymentPrice,
+              bookingId: bookingId,
+              paymentPrice: widget.paymentPrice,
               pnrIb: pnrIb!,
               bookingIdIb: bookingIdIb,
             ),
           ),
         );
+      }
     } else {
       debugPrint('❌ Booking failed or no response');
-      print("pnr = ${pnrIb}");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Booking failed. Please contact support.')),
       );

@@ -1,103 +1,123 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:trip_go/constants.dart';
-import '../destination_details_page.dart';
-import '../trending_destinations.dart';
+import '../../../../../AppManager/Api/api_service/TourService/indian_destination_view_model.dart';
+import '../tour_category_view.dart';
 import 'city_builder.dart';
 
-class PopularIndianDestination extends StatelessWidget {
+class PopularIndianDestination extends StatefulWidget {
   const PopularIndianDestination({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, String>> cities = [
-      {
-        'img': 'https://images.unsplash.com/photo-1561359313-0639aad49ca6',
-        'title': 'Varanasi',
-      },
-      {
-        'img': 'https://static2.tripoto.com/media/filter/nl/img/1706196/TripDocument/1619425826_cq5dam_web_1280_765.jpeg',
-        'title': 'Kaimur Hills',
-      },
-      {
-        'img': 'https://www.holidify.com/images/cmsuploads/compressed/shutterstock_402506581_20191024172033.jpg',
-        'title': 'Gaya',
-      },
-      {
-        'img': 'https://cdn.getyourguide.com/img/tour/2f6fe4e17edef2ae.jpeg/145.jpg',
-        'title': 'Ayodhya',
-      },
-      {
-        'img': 'https://www.buddhisttourism.online/assets/images/rajgir-banner4.webp',
-        'title': 'Rajgiri',
-      },
-      {
-        'img': 'https://www.holidify.com/images/cmsuploads/compressed/15267714_20200120114034.jpg',
-        'title': 'Kerela',
-      },
-      {
-        'img': 'https://travelsetu.com/apps/uploads/new_destinations_photos/destination/2023/12/13/b9e1b5bbf87f3ec75c09613f9378b564_1000x1000.jpg',
-        'title': 'Spiti Valley',
-      },
-      {
-        'img': 'https://punetours.com/wp-content/uploads/2017/10/kashmir-tour-honeymoon-package-booking.jpg',
-        'title': 'Kashmir',
-      },
-    ];
+  State<PopularIndianDestination> createState() => _PopularIndianDestinationState();
+}
+class _PopularIndianDestinationState extends State<PopularIndianDestination> {
+  late final PageController _pageController;
+  int _currentPage = 0;
 
-    return Column(
-      children: [
-        Text(
-          "DESTINATION",
-          style: GoogleFonts.poppins(
-            color: constants.themeColor2,
-            letterSpacing: 1.5,
-          ),
-        ),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: 'Popular ',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xffF73130),
-                  fontSize: 20,
-                ),
-              ),
-              TextSpan(
-                text: 'Indian Destination',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  fontSize: 20,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...cities.map((city) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DestinationDetailsPage(
-                    name: city['title']!,
-                    image: city['img']!,
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.75);
+    _autoScroll();
+  }
+
+  void _autoScroll() {
+    Future.delayed(const Duration(seconds: 3)).then((_) {
+      if (_pageController.hasClients) {
+        _currentPage++;
+        _pageController.animateToPage(
+          _currentPage % 5, // Use destination list length here
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+        _autoScroll(); // recursive call
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => IndianDestinationViewModel()..loadDestinations(),
+      child: Consumer<IndianDestinationViewModel>(
+        builder: (context, viewModel, _) {
+          if (viewModel.isLoading) {
+            return const CircularProgressIndicator();
+          } else if (viewModel.errorMessage != null) {
+            return Text(viewModel.errorMessage!);
+          } else {
+            final destinations = viewModel.destinations;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text("DESTINATION", style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
+                ),),
+                Center(
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Popular ',
+                          style: TextStyle(color: constants.themeColor1),
+                        ),
+                        TextSpan(
+                          text: 'Indian Destinations',
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
-            child: CityBuilder(
-              img: city['img']!,
-              title: city['title']!,
-            ),
-          ),
-        )),
-      ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 400, // Adjust height as needed
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: destinations.length,
+                    itemBuilder: (context, index) {
+                      final destination = destinations[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TourCategoryView(
+                                name: destination.name,
+                                slug: destination.slug,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: CityBuilder2(
+                            img: destination.image,
+                            title: destination.name,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
     );
   }
 }

@@ -4,8 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 class ImageCarouselSlider extends StatelessWidget {
   final List<String> imgList;
 
-  const ImageCarouselSlider({Key? key, required this.imgList})
-      : super(key: key);
+  const ImageCarouselSlider({super.key, required this.imgList});
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +36,7 @@ class ImageCarouselSlider extends StatelessWidget {
 class RoundedNetworkImage extends StatelessWidget {
   final String imageUrl;
 
-  const RoundedNetworkImage({Key? key, required this.imageUrl})
-      : super(key: key);
+  const RoundedNetworkImage({super.key, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trip_go/constants.dart';
 class AirlineBottomSheet extends StatefulWidget {
   final Set<String> initiallySelectedAirlines;
   const AirlineBottomSheet({super.key, required this.initiallySelectedAirlines});

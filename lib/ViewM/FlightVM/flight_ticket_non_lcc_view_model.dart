@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../AppManager/Api/api_service/FlightSearchService/flight_book_non_lcc_service.dart';
-import '../../AppManager/Api/api_service/FlightSearchService/flight_ticket_lcc_service.dart';
 import '../../Model/FlightM/flight_ticket_lcc_model.dart';
 
 class FlightTicketNonLccViewModel extends ChangeNotifier {

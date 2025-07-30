@@ -1,9 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trip_go/constants.dart'; // Assuming themeColor1 and themeColor2 are here
+import 'package:provider/provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/auth_provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/login/login_view.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/profile_page.dart';
+import 'package:trip_go/View/Widgets/notification_page.dart';
+import 'package:trip_go/View/Widgets/support_page.dart';
+import 'package:trip_go/constants.dart';
 
 class DrawerQuickAccess extends StatelessWidget {
   const DrawerQuickAccess({super.key});
+
+  void _handleAccountTap(BuildContext context) {
+    //final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    
+      Navigator.push(
+        context, 
+        MaterialPageRoute(builder: (context) => const ProfilePage())
+      );
+    
+  }
+  void _handleSupportTap(BuildContext context){
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>SupportPage()));
+  }
+  void _handleNotificationTap(BuildContext context){
+     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    Navigator.pop(context);  
+   if (authProvider.isLoggedIn) {
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>NotificationPage()));
+   }
+    else{
+       Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginView()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,9 +45,21 @@ class DrawerQuickAccess extends StatelessWidget {
     final circleSize = screenWidth * 0.14;
 
     final items = [
-      {'icon': Icons.person_outline, 'label': 'My Account'},
-      {'icon': Icons.chat_bubble_outline, 'label': 'Support'},
-      {'icon': Icons.notifications_none, 'label': 'Notifications'},
+      {
+        'icon': Icons.person_outline, 
+        'label': 'My Account',
+        'onTap': () => _handleAccountTap(context)
+      },
+      {
+        'icon': Icons.chat_bubble_outline, 
+        'label': 'Support',
+        'onTap': ()=> _handleSupportTap(context)// Add support page navigation
+      },
+      {
+        'icon': Icons.notifications_none, 
+        'label': 'Notifications',
+        'onTap': () => _handleNotificationTap(context)// Add notifications page navigation
+      },
     ];
 
     return Container(
@@ -36,29 +81,32 @@ class DrawerQuickAccess extends StatelessWidget {
         children: items.map((item) {
           return Column(
             children: [
-              Container(
-                width: circleSize,
-                height: circleSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [constants.themeColor1, constants.themeColor2],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: constants.themeColor1.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
+              GestureDetector(
+                onTap: item['onTap'] as VoidCallback?,
+                child: Container(
+                  width: circleSize,
+                  height: circleSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [constants.themeColor1, constants.themeColor1],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    item['icon'] as IconData,
-                    size: iconSize,
-                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: constants.themeColor1.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      item['icon'] as IconData,
+                      size: iconSize,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

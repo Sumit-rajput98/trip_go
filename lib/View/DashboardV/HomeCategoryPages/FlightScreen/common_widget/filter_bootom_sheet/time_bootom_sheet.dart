@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trip_go/constants.dart';
 class TimeBottomSheet extends StatefulWidget {
   final bool isOneWay;
 
@@ -102,10 +101,10 @@ class _TimeBottomSheetState extends State<TimeBottomSheet> {
                     fontWeight: FontWeight.w600)),
           ),
           const SizedBox(height: 20),
-          buildTimeGrid("Departure from New Delhi", selectedFrom),
+          buildTimeGrid("Departure from Arrival City", selectedFrom),
           if (!widget.isOneWay) ...[
             const SizedBox(height: 20),
-            buildTimeGrid("Departure from Mumbai", selectedTo),
+            buildTimeGrid("Departure from Destination City", selectedTo),
           ],
           const Spacer(),
           Center(

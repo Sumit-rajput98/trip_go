@@ -1,10 +1,17 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/auth_provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/login/login_view.dart';
 import 'package:trip_go/View/DashboardV/home_screen.dart';
+import 'package:trip_go/View/Widgets/notification_page.dart';
 import 'package:trip_go/constants.dart';
 import '../Widgets/Drawer/custom_drawer.dart';
 import 'category_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -72,10 +79,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       InkWell(
                         onTap: () => _showCustomDrawer(context),
-                        child: Icon(
-                          Icons.menu,
-                          color: Color(0xff1B499F),
-                          size: screenWidth * 0.07,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Icon(
+                            CupertinoIcons.line_horizontal_3,
+                            color: Color(0xff1B499F),
+                            size: screenWidth * 0.07,
+                          ),
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.035),
@@ -88,15 +98,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/icons/notification.png', // replace with your actual notification image path
-                        height: screenWidth * 0.065,
+                      GestureDetector(
+                        onTap: (){
+                           final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    Navigator.pop(context);  
+   if (authProvider.isLoggedIn) {
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>NotificationPage()));
+   }
+    else{
+       Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginView()),
+      );
+    }
+                        },
+                        child: Image.asset(
+                          'assets/icons/notification.png', // replace with your actual notification image path
+                          height: screenWidth * 0.065,
+                        ),
                       ),
-                      SizedBox(width: screenWidth * 0.04),
-                      Image.asset(
-                        'assets/icons/wallet.png', // replace with your actual wallet image path
-                        height: screenWidth * 0.065,
-                      ),
+                      // SizedBox(width: screenWidth * 0.04),
+                      // Image.asset(
+                      //   'assets/icons/wallet.png', // replace with your actual wallet image path
+                      //   height: screenWidth * 0.065,
+                      // ),
                     ],
                   ),
                 ],
@@ -109,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               right: screenWidth * 0.04,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                child: Container(
+                child: SizedBox(
                   height: screenHeight * 0.12, // Adjust card height as needed
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

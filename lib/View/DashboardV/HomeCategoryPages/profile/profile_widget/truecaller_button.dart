@@ -6,10 +6,10 @@ class TruecallerButton extends StatelessWidget {
   final String text;
 
   const TruecallerButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     this.text = 'Continue with Truecaller',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

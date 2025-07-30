@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../../../Model/FlightM/add_traveller_model.dart';
+import '../../../../ViewM/FlightVM/create_order_view_model..dart';
 import '../../../../ViewM/FlightVM/flight_ticket_lcc_view_model.dart';
 import '../../../../Model/FlightM/flight_ticket_lcc_model.dart';
+import '../../../../ViewM/FlightVM/verify_payment_view_model.dart';
 import 'booking_success_page.dart';
 
 class FlightTicketBook extends StatefulWidget {
+  final bool? isInternational;
+  final bool isLcc;
   final String email;
+  final String phone;
   final String? companyName;
   final String? regNo;
   final Map<String, dynamic>? fare;
@@ -14,19 +19,27 @@ class FlightTicketBook extends StatefulWidget {
   final String? traceId;
   final List<Traveller> travellers;
   final Map<String, dynamic> seatDynamicData;
+  final Map<String, dynamic>? baggageDynamicData;
+  final Map<String, dynamic>? mealDynamicData;
   int? paymentPrice;
+
 
   FlightTicketBook({
     super.key,
     this.fare,
+    this.isInternational,
     this.companyName,
     this.regNo,
     this.resultIndex,
     this.traceId,
     this.paymentPrice,
+    required this.isLcc,
     required this.email,
     required this.travellers,
     required this.seatDynamicData,
+    this.baggageDynamicData,
+    this.mealDynamicData,
+    required this. phone
   });
 
   @override
@@ -61,30 +74,61 @@ class _FlightTicketBookState extends State<FlightTicketBook> {
     super.dispose();
   }
 
-  void _openCheckout() {
-    print("Start razorPay");
-    var options = {
-      'key': 'rzp_test_2lgdj3701kwk9T', // Use your test or live key here
-      'amount': widget.paymentPrice! * 100, // Amount in paise (₹100 = 10000)
-      'currency': 'INR',
-      'name': 'TripGo Online',
-      'description': 'Flight Ticket Booking',
-      'prefill': {
-        'contact': '9879879877',
-        'email': widget.email,
-      },
-      'external': {
-        'wallets': ['paytm']
-      }
-    };
-    _razorpay.open(options);
+  void _openCheckout() async {
+    print("Start Razorpay - Creating Order -- ${widget.isInternational}");
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${widget.isInternational}");
+
+    final orderVM = CreateOrderViewModel();
+    final success = await orderVM.createOrder(widget.paymentPrice!, widget.traceId ?? "");
+
+    if (success && orderVM.response != null) {
+      final orderData = orderVM.response!.data;
+
+      print("Order ID: ${orderData.orderId}"); // ✅ Print to terminal
+
+      var options = {
+        'key': orderData.key,
+        'amount': orderData.amount, // already in paise
+        'order_id': orderData.orderId,
+        'currency': orderData.currency,
+        'name': 'TripGo Online',
+        'description': 'Flight Ticket Booking',
+        'prefill': {
+          'contact': '9879879877',
+          'email': widget.email,
+        },
+        'external': {
+          'wallets': ['paytm']
+        }
+      };
+
+      _razorpay.open(options);
+    } else {
+      print("❌ Failed to create order");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to create Razorpay order")),
+      );
+    }
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     debugPrint('✅ Payment Successful: ${response.paymentId}');
     debugPrint('✅ Payment orderedId : ${response.orderId}');
-    debugPrint('✅ Payment signature : ${response.signature}');
-    await _bookFlight();
+
+    final verifyVM = VerifyPaymentViewModel();
+    final isVerified = await verifyVM.verifyPayment(
+      response.paymentId!,
+      response.orderId!,
+    );
+
+    if (isVerified) {
+      await _bookFlight(); // Only book flight if payment is verified
+    } else {
+      debugPrint('❌ Payment verification failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment verification failed.')),
+      );
+    }
   }
 
   // void _handlePaymentError(PaymentFailureResponse response) {
@@ -100,6 +144,66 @@ class _FlightTicketBookState extends State<FlightTicketBook> {
   }
 
   Future<void> _bookFlight() async {
+    print(widget.isInternational);
+
+    // 1. Parse meal data
+    final List<MealDynamic> mealDynamicList =
+    ((widget.mealDynamicData?['MealDynamic'] as List?)?.first as Map<String, dynamic>)
+        .values
+        .map((item) => MealDynamic(
+      airlineCode: item['AirlineCode'] ?? '',
+      flightNumber: item['FlightNumber'] ?? '',
+      wayType: item['WayType'] ?? 0,
+      code: item['Code'] ?? '',
+      description: item['Description'],
+      airlineDescription: item['AirlineDescription'] ?? '',
+      quantity: item['Quantity'] ?? 0,
+      currency: item['Currency'] ?? '',
+      price: (item['Price'] as num?)?.toDouble() ?? 0.0,
+      origin: item['Origin'] ?? '',
+      destination: item['Destination'] ?? '',
+    ))
+        .toList();
+
+    // 2. Parse seat data
+    final seatDynamicList = (widget.seatDynamicData['SeatDynamic'] as List<dynamic>).map((item) {
+      return SeatDynamic(
+        airlineCode: item['AirlineCode'] ?? '',
+        flightNumber: item['FlightNumber'] ?? '',
+        craftType: item['CraftType'] ?? '',
+        origin: item['Origin'] ?? '',
+        destination: item['Destination'] ?? '',
+        availablityType: item['AvailablityType'] ?? 0,
+        description: item['Description'] ?? 0,
+        code: item['Code'] ?? '',
+        rowNo: item['RowNo'] ?? '',
+        seatNo: item['SeatNo'],
+        seatType: item['SeatType'] ?? 0,
+        seatWayType: item['SeatWayType'] ?? 0,
+        compartment: item['Compartment'] ?? 0,
+        deck: item['Deck'] ?? 0,
+        currency: item['Currency'] ?? '',
+        price: (item['Price'] as num?)?.toDouble() ?? 0.0,
+      );
+    }).toList();
+
+    // 3. Parse baggage data
+    final baggageDynamicList = (widget.baggageDynamicData?['BaggageDynamic'] as List<dynamic>).map((item) {
+      return BaggageDynamic(
+        airlineCode: item['AirlineCode'] ?? '',
+        flightNumber: item['FlightNumber'] ?? '',
+        wayType: item['WayType'] ?? 0,
+        code: item['Code'] ?? '',
+        description: item['Description'] ?? 0,
+        weight: item['Weight'] ?? 0,
+        currency: item['Currency'] ?? '',
+        price: (item['Price'] as num?)?.toDouble() ?? 0.0,
+        origin: item['Origin'] ?? '',
+        destination: item['Destination'] ?? '',
+      );
+    }).toList();
+
+    // 4. Only now build the passenger list
     final passengers = widget.travellers.asMap().entries.map((entry) {
       int index = entry.key;
       Traveller traveller = entry.value;
@@ -128,63 +232,59 @@ class _FlightTicketBookState extends State<FlightTicketBook> {
         gstCompanyContactNumber: "",
         gstNumber: widget.regNo ?? "",
         gstCompanyEmail: "",
+
+        // ✅ now these are defined
+        seatDynamic: seatDynamicList,
+        baggageDynamic: baggageDynamicList,
+        mealDynamic: mealDynamicList,
       );
     }).toList();
 
-    final seatDynamicList = (widget.seatDynamicData['SeatDynamic'] as List<dynamic>).map((item) {
-      return SeatDynamic(
-        airlineCode: item['AirlineCode'] ?? '',
-        flightNumber: item['FlightNumber'] ?? '',
-        craftType: item['CraftType'] ?? '',
-        origin: item['Origin'] ?? '',
-        destination: item['Destination'] ?? '',
-        availablityType: item['AvailablityType'] ?? 0,
-        description: item['Description'] ?? 0,
-        code: item['Code'] ?? '',
-        rowNo: item['RowNo'] ?? '',
-        seatNo: item['SeatNo'],
-        seatType: item['SeatType'] ?? 0,
-        seatWayType: item['SeatWayType'] ?? 0,
-        compartment: item['Compartment'] ?? 0,
-        deck: item['Deck'] ?? 0,
-        currency: item['Currency'] ?? '',
-        price: (item['Price'] as num?)?.toDouble() ?? 0.0,
-      );
-    }).toList();
-
+    // 5. Make the booking
     final flightTicketRequest = FlightTicketRequest(
+      isLcc: widget.isLcc,
+      userEmail: "support@eweblink.net",
+      userPhone: "9310167293",
+      type: "app",
       traceId: widget.traceId ?? "",
       resultIndex: widget.resultIndex ?? "",
       passengers: passengers,
       seatDynamic: seatDynamicList,
+      baggageDynamic: baggageDynamicList,
+      mealDynamic: mealDynamicList,
     );
 
     await viewModel.bookFlight(flightTicketRequest);
 
+    // 6. Show response
     if (viewModel.response != null && viewModel.response!.success) {
       setState(() {
         pnr = viewModel.response!.data.pnr;
         bookingId = viewModel.response!.data.bookingId;
         traceId = viewModel.response!.data.traceId;
       });
-      if(mounted)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BookingSuccessPage(
-            pnr: pnr!,
-            traceId: traceId!,
-            bookingId: bookingId.toString(), paymentPrice: widget.paymentPrice,
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookingSuccessPage(
+              isInternational: widget.isInternational,
+              pnr: pnr!,
+              traceId: traceId!,
+              bookingId: bookingId.toString(),
+              paymentPrice: widget.paymentPrice,
+            ),
           ),
-        ),
-      );
+        );
+      }
     } else {
       debugPrint('❌ Booking failed or no response');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking failed. Please contact support.')),
+        const SnackBar(content: Text('Booking failed. Please contact support.')),
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

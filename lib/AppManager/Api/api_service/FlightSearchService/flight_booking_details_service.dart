@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../../../Api/api_service/api_constant.dart'; // Adjust path as necessary
 import '../../../../Model/FlightM/flight_booking_details.dart';
 
 class FlightBookingDetailsService {
-  static const String _url = 'https://admin.travelsdata.com/api/flight-booking-details';
+  static const String _endpoint = 'api/flight-booking-details';
 
   Future<FlightBookingDetailsModel?> fetchFlightBookingDetails({
     required String traceId,
     required String pnr,
     required String bookingId,
   }) async {
+    final String fullUrl = ApiConstant.baseUrl + _endpoint;
+
     try {
       final requestBody = {
         "TraceId": traceId,
@@ -18,11 +21,11 @@ class FlightBookingDetailsService {
         "BookingId": bookingId,
       };
 
-      print('🔵 [API POST] $_url');
+      print('🔵 [API POST] $fullUrl');
       print('📝 [Request Body] ${jsonEncode(requestBody)}');
 
       final response = await http.post(
-        Uri.parse(_url),
+        Uri.parse(fullUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );

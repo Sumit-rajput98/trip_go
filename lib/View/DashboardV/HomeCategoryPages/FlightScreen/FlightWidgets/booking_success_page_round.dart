@@ -76,7 +76,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
               ),
               SizedBox(height: 8),
               // Text("Amount paid: ${fare?.publishedFare}", style: TextStyle(fontSize: 16, fontFamily: 'poppins')),
-              Text("Amount paid: ${widget.paymentPrice}", style: TextStyle(fontSize: 16, fontFamily: 'poppins')),
+              Text("Amount paid: ₹${widget.paymentPrice}", style: TextStyle(fontSize: 16, fontFamily: 'poppins')),
               Text("Booking ID: ${itinerary?.bookingId}", style: TextStyle(color: Colors.grey, fontFamily: 'poppins')),
               SizedBox(height: 16),
               _trainInfoCard(),
@@ -123,7 +123,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
   }
 
   Widget _trainInfoCard() {
-    String _formatDateTime(String rawDateTime) {
+    String formatDateTime(String rawDateTime) {
       try {
         final dateTime = DateTime.parse(rawDateTime);
         final formatter = DateFormat('dd MMM yyyy, hh:mm a');
@@ -165,7 +165,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
                 Column(
                   children: [
                     Text(
-                      _formatDateTime(segments[0].depTime),
+                      formatDateTime(segments[0].depTime),
                       style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
                     ),
                     Text(
@@ -203,7 +203,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
                 Column(
                   children: [
                     Text(
-                      _formatDateTime(segments[0].arrTime),
+                      formatDateTime(segments[0].arrTime),
                       style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
                     ),
                     Text(
@@ -292,7 +292,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
   }
 
   Widget _inboundFlightInfoCard() {
-    String _formatDateTime(String rawDateTime) {
+    String formatDateTime(String rawDateTime) {
       try {
         final dateTime = DateTime.parse(rawDateTime);
         final formatter = DateFormat('dd MMM yyyy, hh:mm a');
@@ -334,7 +334,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
                 Column(
                   children: [
                     Text(
-                      _formatDateTime(segments[0].depTime),
+                      formatDateTime(segments[0].depTime),
                       style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
                     ),
                     Text(
@@ -372,7 +372,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
                 Column(
                   children: [
                     Text(
-                      _formatDateTime(segments[0].arrTime),
+                      formatDateTime(segments[0].arrTime),
                       style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
                     ),
                     Text(
@@ -475,7 +475,7 @@ class _BookingSuccessPageRoundState extends State<BookingSuccessPageRound> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'poppins', color: Colors.white),
+        style: TextStyle(fontFamily: 'poppins', color: Colors.white, fontSize: 12),
       ),
     );
   }

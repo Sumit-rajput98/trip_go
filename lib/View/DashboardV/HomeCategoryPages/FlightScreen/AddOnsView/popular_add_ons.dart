@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PopularAddOnsSection extends StatefulWidget {
+  const PopularAddOnsSection({super.key});
+
   @override
   State<PopularAddOnsSection> createState() => _PopularAddOnsSectionState();
 }

@@ -1,14 +1,16 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/TourScreen/TourPartsSection/carsoul_section.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/TourScreen/TourPartsSection/contact_info_banner.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/TourScreen/TourPartsSection/holiday_theme_scroll_section.dart';
 import '../../../../constants.dart';
 import 'TourPartsSection/destination_page_view.dart';
 import 'TourPartsSection/international_destinations.dart';
 import 'TourPartsSection/popular_indian_destination.dart';
 import 'TourPartsSection/tour_slider_card.dart';
 import 'TourWidget/explore_more_button.dart';
+import 'TourWidget/trending_avatar_row.dart';
 
 class TrendingDestinations extends StatefulWidget {
   const TrendingDestinations({super.key});
@@ -80,22 +82,23 @@ class _TrendingDestinationsState extends State<TrendingDestinations> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          TrendingAvatarRow(),
           Padding(
-            padding: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.only(top: 5),
             child: RichText(
               text: TextSpan(
                 text: 'Top',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  color: Colors.red,
+                  fontSize: 22,
+                  color: constants.themeColor1,
                 ),
                 children: [
                   TextSpan(
                     text: ' Trending Destinations',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: 22,
                       color: Colors.black87,
                     ),
                   ),
@@ -104,19 +107,23 @@ class _TrendingDestinationsState extends State<TrendingDestinations> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Explore the hottest travel spots around the globe and experience the best of holidays.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Explore the hottest travel spots around the globe and experience the best of holidays.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
+            ),
           ),
           const SizedBox(height: 20),
 
           DestinationPageView(
-            citiesGrouped: _citiesGrouped,
             pageController: _pageController,
             currentPage: _currentPage,
           ),
 
+          const SizedBox(height: 24),
+          CustomCarousel(),
           const SizedBox(height: 24),
 
           Padding(
@@ -124,7 +131,7 @@ class _TrendingDestinationsState extends State<TrendingDestinations> {
             child: const PopularIndianDestination(),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 50),
 
           ExploreMoreButton(
             onPressed: () {
@@ -149,7 +156,7 @@ class _TrendingDestinationsState extends State<TrendingDestinations> {
                     children: [
                       // Background image
                       Image.network(
-                        'https://images.unsplash.com/photo-1603738397297-a374b78e9626?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGNhbXBpbmclMjBsaWdodGluaHxlbnwwfHwwfHx8MA%3D%3D',
+                        'https://www.tripgoonline.com/Images/tour/banner-hq.jpg',
                         fit: BoxFit.cover,
                       ),
 
@@ -223,6 +230,11 @@ class _TrendingDestinationsState extends State<TrendingDestinations> {
               },
             ),
           ),
+
+          HolidayThemeScroll(),
+          SizedBox(height: 20,),
+          ContactInfoBanner(),
+          SizedBox(height: 20,),
         ],
       ),
     );

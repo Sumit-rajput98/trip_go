@@ -5,11 +5,15 @@ import 'HomeCategoryPages/TourScreen/tour_page.dart';
 import 'package:trip_go/View/DashboardV/Widget/dashboard_app_bar.dart';
 
 class CabsPage extends StatelessWidget {
+  const CabsPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Cabs Page"));
 }
 
 class BusesPage extends StatelessWidget {
+  const BusesPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Buses Page"));
 }
@@ -17,7 +21,7 @@ class BusesPage extends StatelessWidget {
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
 
-  const HomeScreen({Key? key, this.initialIndex = 0}) : super(key: key);
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

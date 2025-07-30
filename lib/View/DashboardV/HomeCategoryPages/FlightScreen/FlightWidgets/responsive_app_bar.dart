@@ -52,7 +52,7 @@ class ResponsiveAppBar extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.045,
+                        fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -75,10 +75,10 @@ class ResponsiveAppBar extends StatelessWidget {
                         Navigator.pop(context);
                       },
                     ),
-                    IconButton(
-                      icon: Icon(Icons.swap_vert, size: screenWidth * 0.055),
-                      onPressed: onSwap,
-                    ),
+                    // IconButton(
+                    //   icon: Icon(Icons.swap_vert, size: screenWidth * 0.055),
+                    //   onPressed: onSwap,
+                    // ),
                     // IconButton(
                     //   icon: Icon(Icons.filter_alt_outlined, size: screenWidth * 0.055),
                     //   onPressed: onFilter,

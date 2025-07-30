@@ -437,7 +437,6 @@ class _flightCard extends StatelessWidget {
   final String departureDate;
   final List<Map<String, String>> segmentList;
   const _flightCard({
-    super.key,
     required this.price,
     required this.departureDate,
     required this.segmentList,

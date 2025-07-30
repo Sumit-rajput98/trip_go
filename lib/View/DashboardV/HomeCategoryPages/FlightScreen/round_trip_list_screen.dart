@@ -6,22 +6,33 @@ import 'package:trip_go/Model/FlightM/round_trip_flight_search_model.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/FlightReviewScreen/round_trip_flight_review_screen.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/common_widget/bottom_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:trip_go/ViewM/FlightVM/flight_quote_round_view_model.dart';
 import '../../../../Model/FlightM/flight_quote_model.dart';
+import '../../../../Model/FlightM/flight_quote_round_model.dart';
+import '../../../../Model/FlightM/selected_upsell_class.dart';
+import '../../../../Model/FlightM/upsell_model.dart';
 import '../../../../ViewM/FlightVM/flight_quote_view_model.dart';
+import '../../../../ViewM/FlightVM/upsell_view_model.dart';
 import '../../../../constants.dart';
+import 'FlightReviewScreen/flight_review_screen.dart';
 import 'FlightWidgets/responsive_app_bar.dart';
+import 'FlightWidgets/upsell_bottom_sheet.dart';
 import 'common_widget/bottom_sgeets.dart';
 import 'common_widget/filter_bootom_sheet/airline_bottom_sheet.dart';
 import 'common_widget/filter_bootom_sheet/filter_bottom_sheet.dart';
 import 'common_widget/filter_bootom_sheet/sort_by_bottom_sheet.dart';
 import 'common_widget/filter_bootom_sheet/time_bootom_sheet.dart';
 import 'common_widget/loading_screen.dart';
+import 'flight_container.dart';
+import 'flight_container_for_international.dart';
 import 'flight_list_screen.dart';
 
 class RoundTripListScreen extends StatefulWidget {
   final RoundTripFlightSearchModel flightSearchResponse;
   final DateTime departureDate;
   final int adultCount;
+  final int? childrenCount;
+  final int? infantsCount;
   final String fromCity;
   final String toCity;
   const RoundTripListScreen({
@@ -29,6 +40,8 @@ class RoundTripListScreen extends StatefulWidget {
     required this.flightSearchResponse,
     required this.departureDate,
     required this.adultCount,
+    this.childrenCount,
+    this.infantsCount,
     required this.fromCity,
     required this.toCity,
   });
@@ -41,11 +54,12 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
 
   RangeValues selectedPriceRange = const RangeValues(0, 100000);
   List<String> selectedDelTimes = [];
-
+  Result? selectedFareFromUpsell;
   bool isNonStop = true;
   Set<String> selectedAirlines = {};
   List<SearchResult> allFlights = [];
   List<SearchResult> filteredFlights = [];
+  int? selectedFareFromUpsellPrice;
 
   void _applyFilters({
     required bool nonStop,
@@ -247,239 +261,244 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
     });
   }
 
-  void _navigatorFunc(int? price) {
-    final viewModel = Provider.of<FlightQuoteViewModel>(context, listen: false);
+  void _navigatorFunc(int? price) async {
+    bool isInternationalTripFromUpsell(Result result) {
+      final firstSegment = result.segments?[0][0];
+      final lastSegment = result.segments?.last.last;
 
-    // Show loading
+      final originCountry = firstSegment?.origin?.airport?.countryName;
+      final destinationCountry = lastSegment?.destination?.airport?.countryName;
+
+      return originCountry != null &&
+          destinationCountry != null &&
+          originCountry.toLowerCase() != destinationCountry.toLowerCase();
+    }
+
+    final viewModel = Provider.of<FlightQuoteRoundViewModel>(context, listen: false);
+    final viewModel2 = Provider.of<FlightQuoteViewModel>(context, listen: false);
+
+    final selectedFlight = selectedFareFromUpsell ?? flights[selectedOnwardIndex!];
+
+    final isInternational = selectedFlight is SearchResult
+        ? isInternationalTrip(selectedFlight)
+        : isInternationalTripFromUpsell(selectedFlight as Result);
+
+    final resultIndex = selectedFlight is SearchResult
+        ? (selectedFlight as SearchResult).resultIndex
+        : (selectedFlight as Result).resultIndex;
+
+    if (resultIndex == null) {
+      debugPrint("Error: resultIndex is null");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Something went wrong. Please try again.')),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoadingScreen()),
     );
 
-    // Prepare request
-    final request1 = FlightQuoteRequest(
-      traceId: widget.flightSearchResponse.data!.traceId!,
-      resultIndex: flights[selectedOnwardIndex!].resultIndex!,
-    );
-    final request2 = FlightQuoteRequest(
-      traceId: widget.flightSearchResponse.data!.traceId!,
-      resultIndex: flights2[selectedReturnIndex!].resultIndex!,
-    );
+    if (isInternational || selectedFareFromUpsell != null) {
+      // 🔹 Handle INTERNATIONAL or one-way upsell quote
+      final request = FlightQuoteRequest(
+        traceId: widget.flightSearchResponse.data!.traceId!,
+        resultIndex: resultIndex,
+      );
 
-    viewModel.fetchQuoteRT(request1, request2).then((_) {
-      Navigator.pop(context);
-      print('✅ Flight search completed');
+      await viewModel2.fetchQuote(request);
+      Navigator.pop(context); // Dismiss loading
 
-      final response = viewModel.flightQuoteRes1;
-      final responseReturn = viewModel.flightQuoteRes2;
+      final response = viewModel2.flightQuoteModel;
       if (response != null) {
         final segments = response.data!.results!.segments!;
-        final hasLayover = segments[0].length > 1;
-
         final firstSegment = segments[0][0];
+        final hasLayover = segments[0].length > 1;
         final lastSegment = hasLayover ? segments[0][1] : segments[0][0];
-        //final segment = response.result.segments[0][0]; // First segment, first flight
-        print("hii");
-        // final firstSegment = response.data!.results!.segments![0][0];
-        print("Origin City: ${firstSegment.origin?.airport?.cityName}");
-        print(
-          "Destination City: ${firstSegment.destination?.airport?.cityName}",
-        );
-        print("Dep Time: ${firstSegment.origin?.depTime}");
-        print("Arr Time: ${firstSegment.destination?.arrTime}");
-        print("Duration: ${firstSegment.duration}");
-        print("Fare Class: ${firstSegment.airline?.fareClass}");
-        print("Published Fare: ${response.data!.results!.fare?.publishedFare}");
 
-        String? layoverCity;
-        String? layoverCityCode;
-        String? layoverDuration;
-        String duration;
-        String durationA;
-        String flightName =
-            "${firstSegment.airline!.airlineName!} | ${firstSegment.airline!.flightNumber!}";
-        String flightName2 =
-            "${lastSegment.airline!.airlineName!} | ${lastSegment.airline!.flightNumber!}";
+        String? layoverCity, layoverCityCode, layoverDuration;
+        String duration, durationA = '';
 
-        // Parse times for layover calculation
         if (hasLayover) {
           final layoverArrival = firstSegment.destination!.arrTime!;
           final layoverDeparture = lastSegment.origin!.depTime!;
+          final layoverMinutes = layoverDeparture.difference(layoverArrival).inMinutes;
 
-          final layoverCityName = firstSegment.destination!.airport!.cityName!;
-          final layoverCityAirportCode =
-              firstSegment.destination!.airport!.airportCode!;
+          layoverCity = firstSegment.destination!.airport!.cityName!;
+          layoverCityCode = firstSegment.destination!.airport!.airportCode!;
+          layoverDuration = "${layoverMinutes ~/ 60}h ${layoverMinutes % 60}m layover in $layoverCity";
 
-          final layoverMinutes =
-              layoverDeparture.difference(layoverArrival).inMinutes;
-          final layoverHours = layoverMinutes ~/ 60;
-          final layoverRemainingMinutes = layoverMinutes % 60;
-
-          layoverCity = layoverCityName;
-          layoverCityCode = layoverCityAirportCode;
-          layoverDuration =
-              "${layoverHours}h ${layoverRemainingMinutes}m layover in $layoverCity";
-
-          final originToLayoverMinutes = firstSegment.duration!;
-          final layoverToDestination = lastSegment.duration!;
-          final totalFlightHours = originToLayoverMinutes ~/ 60;
-          final totalFlightRemainingMinutes = originToLayoverMinutes % 60;
-          duration = "${totalFlightHours}h ${totalFlightRemainingMinutes}m";
-          final totalFlightHoursA = layoverToDestination ~/ 60;
-          final totalFlightRemMin = layoverToDestination % 60;
-          durationA = "${totalFlightHoursA}h ${totalFlightRemMin}m";
+          final originDur = firstSegment.duration!;
+          final layoverDur = lastSegment.duration!;
+          duration = "${originDur ~/ 60}h ${originDur % 60}m";
+          durationA = "${layoverDur ~/ 60}h ${layoverDur % 60}m";
         } else {
-          final totalFlightMinutes = firstSegment.duration!;
-          final hours = totalFlightMinutes ~/ 60;
-          final minutes = totalFlightMinutes % 60;
-          duration = "${hours}h ${minutes}m";
-          durationA = '';
-        }
-        final returnSegments = responseReturn!.data!.results!.segments;
-        final hasReturnLayover = returnSegments![0].length > 1;
-
-        final firstReturnSegment = returnSegments[0][0];
-        final lastReturnSegment =
-            hasReturnLayover ? returnSegments[0][1] : returnSegments[0][0];
-
-        String? returnLayoverCity;
-        String? returnLayoverCityCode;
-        String? returnLayoverDuration;
-        String returnDuration;
-        String returnDurationA;
-        String returnFlightName =
-            "${firstReturnSegment.airline!.airlineName!} | ${firstReturnSegment.airline!.flightNumber!}";
-        String returnFlightName2 =
-            "${lastReturnSegment.airline!.airlineName!} | ${lastReturnSegment.airline!.flightNumber!}";
-
-        if (hasReturnLayover) {
-          final returnLayoverArrival = firstReturnSegment.destination!.arrTime!;
-          final returnLayoverDeparture = lastReturnSegment.origin!.depTime!;
-
-          final layoverCityName =
-              firstReturnSegment.destination!.airport!.cityName!;
-          final layoverCityCodeTemp =
-              firstReturnSegment.destination!.airport!.airportCode!;
-
-          final layoverMinutes =
-              returnLayoverDeparture.difference(returnLayoverArrival).inMinutes;
-          final layoverHours = layoverMinutes ~/ 60;
-          final layoverRemainingMinutes = layoverMinutes % 60;
-
-          returnLayoverCity = layoverCityName;
-          returnLayoverCityCode = layoverCityCodeTemp;
-          returnLayoverDuration =
-              "${layoverHours}h ${layoverRemainingMinutes}m layover in $returnLayoverCity";
-
-          final originToLayoverDuration = firstReturnSegment.duration!;
-          final layoverToDestination = lastReturnSegment.duration!;
-          returnDuration =
-              "${originToLayoverDuration ~/ 60}h ${originToLayoverDuration % 60}m";
-          returnDurationA =
-              "${layoverToDestination ~/ 60}h ${layoverToDestination % 60}m";
-        } else {
-          final totalReturnDuration = firstReturnSegment.duration!;
-          returnDuration =
-              "${totalReturnDuration ~/ 60}h ${totalReturnDuration % 60}m";
-          returnDurationA = '';
+          final totalDur = firstSegment.duration!;
+          duration = "${totalDur ~/ 60}h ${totalDur % 60}m";
         }
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => RoundTripFlightReviewScreen(
-                  selectedOnwardResultIndex: flights[selectedOnwardIndex!].resultIndex!,
-                  selectedReturnResultIndex: flights2[selectedReturnIndex!].resultIndex!,
-                  isLcc: response.data!.results!.isLcc!,
-                  price:price,
-                  originCity: firstSegment.origin!.airport!.cityName!,
-                  destinationCity: lastSegment.destination!.airport!.cityName!,
-                  originAirportCode: firstSegment.origin!.airport!.airportCode!,
-                  destinationAirportCode:
-                      lastSegment.destination!.airport!.airportCode!,
-                  departure: firstSegment.origin!.depTime!.toString(),
-                  arrival: lastSegment.destination!.arrTime!.toString(),
-                  layoverArr: firstSegment.destination!.arrTime!.toString(),
-                  layoverDep: lastSegment.origin!.depTime!.toString(),
-                  duration: duration,
-                  durationA: durationA,
-                  originTerminalNo:
-                      response
-                          .data!
-                          .results!
-                          .segments![0][0]
-                          .origin!
-                          .airport!
-                          .terminal!,
-                  layoverTerminalNo:
-                      firstSegment.destination!.airport!.terminal!,
-                  layoverTerminalNo2: lastSegment.origin!.airport!.terminal!,
-                  destinationTerminalNo:
-                      lastSegment.destination!.airport!.terminal!,
-                  publishedFare:
-                      response.data!.results!.fare!.publishedFare!.toString(),
-                  supplierFareClass: firstSegment.airline!.fareClass!,
-                  supplierFareClass2: lastSegment.airline!.fareClass!,
-                  resultIndex: response.data!.results!.resultIndex!,
-                  traceId: response.data!.traceId,
-                  layoverCity: layoverCity,
-                  layoverCityCode: layoverCityCode,
-                  layoverDuration: layoverDuration,
-                  flightName: flightName,
-                  flightName2: flightName2,
-                  airlineName: firstSegment.airline!.airlineName!,
-                  returnOriginCity:
-                      firstReturnSegment.origin!.airport!.cityName!,
-                  returnDestinationCity:
-                      lastReturnSegment.destination!.airport!.cityName!,
-                  returnOriginAirportCode:
-                      firstReturnSegment.origin!.airport!.airportCode!,
-                  returnDestinationAirportCode:
-                      lastReturnSegment.destination!.airport!.airportCode!,
-                  returnDeparture:
-                      firstReturnSegment.origin!.depTime!.toString(),
-                  returnArrival:
-                      lastReturnSegment.destination!.arrTime!.toString(),
-                  returnLayoverArr:
-                      firstReturnSegment.destination!.arrTime!.toString(),
-                  returnLayoverDep:
-                      lastReturnSegment.origin!.depTime!.toString(),
-                  returnDuration: returnDuration,
-                  returnDurationA: returnDurationA,
-                  returnOriginTerminalNo:
-                      firstReturnSegment.origin!.airport!.terminal!,
-                  returnLayoverTerminalNo:
-                      firstReturnSegment.destination!.airport!.terminal!,
-                  returnLayoverTerminalNo2:
-                      lastReturnSegment.origin!.airport!.terminal!,
-                  returnDestinationTerminalNo:
-                      lastReturnSegment.destination!.airport!.terminal!,
-                  returnPublishedFare:
-                      responseReturn.data!.results!.fare!.publishedFare!
-                          .toString(),
-                  returnSupplierFareClass:
-                      firstReturnSegment.airline!.fareClass!,
-                  returnSupplierFareClass2:
-                      lastReturnSegment.airline!.fareClass!,
-                  returnResultIndex: responseReturn.data!.results!.resultIndex!,
-                  returnTraceId: responseReturn.data!.traceId,
-                  returnLayoverCity: returnLayoverCity,
-                  returnLayoverCityCode: returnLayoverCityCode,
-                  returnLayoverDuration: returnLayoverDuration,
-                  returnFlightName: returnFlightName,
-                  returnFlightName2: returnFlightName2,
-                  returnAirlineName: firstReturnSegment.airline!.airlineName!,
-                    fare:  response.data!.results!.fare!.toJson(),
-                    fare2: responseReturn.data!.results!.fare!.toJson(), adultCount: widget.adultCount,
-                ),
+            builder: (context) => FlightReviewScreen(
+              isInternational: isInternational,
+              childrenCount: widget.childrenCount,
+              infantCount: widget.infantsCount,
+              adultCount: widget.adultCount,
+              originCity: firstSegment.origin!.airport!.cityName!,
+              destinationCity: lastSegment.destination!.airport!.cityName!,
+              originAirportCode: firstSegment.origin!.airport!.airportCode!,
+              destinationAirportCode: lastSegment.destination!.airport!.airportCode!,
+              departure: firstSegment.origin!.depTime!.toString(),
+              arrival: lastSegment.destination!.arrTime!.toString(),
+              layoverArr: firstSegment.destination!.arrTime!.toString(),
+              layoverDep: lastSegment.origin!.depTime!.toString(),
+              duration: duration,
+              durationA: durationA,
+              originTerminalNo: firstSegment.origin!.airport!.terminal!,
+              layoverTerminalNo: firstSegment.destination!.airport!.terminal!,
+              layoverTerminalNo2: lastSegment.origin!.airport!.terminal!,
+              destinationTerminalNo: lastSegment.destination!.airport!.terminal!,
+              publishedFare: response.data!.results!.fare!.publishedFare!.floor(),
+              supplierFareClass: firstSegment.airline!.fareClass!,
+              supplierFareClass2: lastSegment.airline!.fareClass!,
+              resultIndex: response.data!.results!.resultIndex!,
+              traceId: response.data!.traceId!,
+              layoverCity: layoverCity,
+              layoverCityCode: layoverCityCode,
+              layoverDuration: layoverDuration,
+              flightName: "${firstSegment.airline!.airlineName!} | ${firstSegment.airline!.flightNumber!}",
+              flightName2: "${lastSegment.airline!.airlineName!} | ${lastSegment.airline!.flightNumber!}",
+              airlineName: firstSegment.airline!.airlineName!,
+              fare: response.data!.results!.fare!.toJson(),
+              isLcc: response.data!.results!.isLcc!,
+            ),
           ),
         );
       }
-    });
+    } else {
+      // 🔹 DOMESTIC round-trip flow
+      if (selectedReturnIndex == null || selectedReturnIndex! >= flights2.length) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a return flight')),
+        );
+        return;
+      }
 
-    //Navigator.push(context, MaterialPageRoute(builder: (context)=>RoundTripFlightReviewScreen()));
+      final request = FlightQuoteRoundRequest(
+        traceId: widget.flightSearchResponse.data!.traceId!,
+        resultIndex: flights[selectedOnwardIndex!].resultIndex!,
+        resultIndexIB: flights2[selectedReturnIndex!].resultIndex!,
+      );
+
+      await viewModel.fetchQuoteRoundRT(request);
+      Navigator.pop(context); // Dismiss loading
+
+      final response = viewModel.flightQuoteRoundRes1;
+      if (response != null) {
+        final seg = response.data!.results!.segments!;
+        final inboundSeg = response.data!.inbound!.results!.segments!;
+        final firstSeg = seg[0][0];
+        final lastSeg = seg[0].length > 1 ? seg[0][1] : seg[0][0];
+
+        final firstRet = inboundSeg[0][0];
+        final lastRet = inboundSeg[0].length > 1 ? inboundSeg[0][1] : inboundSeg[0][0];
+
+        // Calculate durations and layovers
+        String duration = "${firstSeg.duration! ~/ 60}h ${firstSeg.duration! % 60}m";
+        String durationA = seg[0].length > 1 ? "${lastSeg.duration! ~/ 60}h ${lastSeg.duration! % 60}m" : '';
+        String returnDuration = "${firstRet.duration! ~/ 60}h ${firstRet.duration! % 60}m";
+        String returnDurationA = inboundSeg[0].length > 1 ? "${lastRet.duration! ~/ 60}h ${lastRet.duration! % 60}m" : '';
+
+        String? layoverCity, layoverCityCode, layoverDuration;
+        if (seg[0].length > 1) {
+          final layoverMinutes = lastSeg.origin!.depTime!.difference(firstSeg.destination!.arrTime!).inMinutes;
+          layoverCity = firstSeg.destination!.airport!.cityName!;
+          layoverCityCode = firstSeg.destination!.airport!.airportCode!;
+          layoverDuration = "${layoverMinutes ~/ 60}h ${layoverMinutes % 60}m layover in $layoverCity";
+        }
+
+        String? returnLayoverCity, returnLayoverCityCode, returnLayoverDuration;
+        if (inboundSeg[0].length > 1) {
+          final retLayoverMinutes = lastRet.origin!.depTime!.difference(firstRet.destination!.arrTime!).inMinutes;
+          returnLayoverCity = firstRet.destination!.airport!.cityName!;
+          returnLayoverCityCode = firstRet.destination!.airport!.airportCode!;
+          returnLayoverDuration = "${retLayoverMinutes ~/ 60}h ${retLayoverMinutes % 60}m layover in $returnLayoverCity";
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoundTripFlightReviewScreen(
+              childrenCount: widget.childrenCount,
+              infantsCount: widget.infantsCount,
+              selectedOnwardResultIndex: flights[selectedOnwardIndex!].resultIndex!,
+              selectedReturnResultIndex: flights2[selectedReturnIndex!].resultIndex!,
+              isLcc: response.data!.results!.isLcc!,
+              isLccIb : flights2[selectedReturnIndex!].isLcc!,
+              price: price,
+              originCity: firstSeg.origin!.airport!.cityName!,
+              destinationCity: lastSeg.destination!.airport!.cityName!,
+              originAirportCode: firstSeg.origin!.airport!.airportCode!,
+              destinationAirportCode: lastSeg.destination!.airport!.airportCode!,
+              departure: firstSeg.origin!.depTime!.toString(),
+              arrival: lastSeg.destination!.arrTime!.toString(),
+              layoverArr: firstSeg.destination!.arrTime!.toString(),
+              layoverDep: lastSeg.origin!.depTime!.toString(),
+              duration: duration,
+              durationA: durationA,
+              originTerminalNo: firstSeg.origin!.airport!.terminal!,
+              layoverTerminalNo: firstSeg.destination!.airport!.terminal!,
+              layoverTerminalNo2: lastSeg.origin!.airport!.terminal!,
+              destinationTerminalNo: lastSeg.destination!.airport!.terminal!,
+              publishedFare: response.data!.results!.fare!.publishedFare!.toString(),
+              supplierFareClass: firstSeg.airline!.fareClass!,
+              supplierFareClass2: lastSeg.airline!.fareClass!,
+              resultIndex: response.data!.results!.resultIndex!,
+              traceId: response.data!.traceId,
+              layoverCity: layoverCity,
+              layoverCityCode: layoverCityCode,
+              layoverDuration: layoverDuration,
+              flightName: "${firstSeg.airline!.airlineName!} | ${firstSeg.airline!.flightNumber!}",
+              flightName2: "${lastSeg.airline!.airlineName!} | ${lastSeg.airline!.flightNumber!}",
+              airlineName: firstSeg.airline!.airlineName!,
+              returnOriginCity: firstRet.origin!.airport!.cityName!,
+              returnDestinationCity: lastRet.destination!.airport!.cityName!,
+              returnOriginAirportCode: firstRet.origin!.airport!.airportCode!,
+              returnDestinationAirportCode: lastRet.destination!.airport!.airportCode!,
+              returnDeparture: firstRet.origin!.depTime!.toString(),
+              returnArrival: lastRet.destination!.arrTime!.toString(),
+              returnLayoverArr: firstRet.destination!.arrTime!.toString(),
+              returnLayoverDep: lastRet.origin!.depTime!.toString(),
+              returnDuration: returnDuration,
+              returnDurationA: returnDurationA,
+              returnOriginTerminalNo: firstRet.origin!.airport!.terminal!,
+              returnLayoverTerminalNo: firstRet.destination!.airport!.terminal!,
+              returnLayoverTerminalNo2: lastRet.origin!.airport!.terminal!,
+              returnDestinationTerminalNo: lastRet.destination!.airport!.terminal!,
+              returnPublishedFare: response.data!.inbound!.results!.fare!.publishedFare!.toString(),
+              returnSupplierFareClass: firstRet.airline!.fareClass!,
+              returnSupplierFareClass2: lastRet.airline!.fareClass!,
+              returnResultIndex: response.data!.inbound!.results!.resultIndex!,
+              returnTraceId: response.data!.traceId,
+              returnLayoverCity: returnLayoverCity,
+              returnLayoverCityCode: returnLayoverCityCode,
+              returnLayoverDuration: returnLayoverDuration,
+              returnFlightName: "${firstRet.airline!.airlineName!} | ${firstRet.airline!.flightNumber!}",
+              returnFlightName2: "${lastRet.airline!.airlineName!} | ${lastRet.airline!.flightNumber!}",
+              returnAirlineName: firstRet.airline!.airlineName!,
+              fare: response.data!.results!.fare!.toJson(),
+              fare2: response.data!.inbound!.results!.fare!.toJson(),
+              adultCount: widget.adultCount,
+            ),
+          ),
+        );
+      }
+    }
   }
+
 
   void _openSortSheet() async {
     final result = await showModalBottomSheet<Map<String, String>>(
@@ -509,34 +528,31 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
   SortOrder sortOrder = SortOrder.ascending;
   void _sortFlights() {
     int direction = sortOrder == SortOrder.ascending ? 1 : -1;
+
     void sortFlightList(List<SearchResult> listToSort) {
       switch (selectedSortType) {
         case FlightSortType.departure:
-          listToSort.sort(
-            (a, b) =>
-                direction *
-                DateTime.parse(
-                  a.segments![0][0].origin!.depTime!.toString(),
-                ).compareTo(
-                  DateTime.parse(b.segments![0][0].origin!.depTime!.toString()),
-                ),
-          );
+          listToSort.sort((a, b) {
+            final aTime = _getDepTimeSafe(a);
+            final bTime = _getDepTimeSafe(b);
+            return direction * aTime.compareTo(bTime);
+          });
           break;
+
         case FlightSortType.duration:
-          listToSort.sort(
-            (a, b) =>
-                direction *
-                a.segments![0][0].duration!.compareTo(
-                  b.segments![0][0].duration!,
-                ),
-          );
+          listToSort.sort((a, b) {
+            final aDuration = _getDurationSafe(a);
+            final bDuration = _getDurationSafe(b);
+            return direction * aDuration.compareTo(bDuration);
+          });
           break;
+
         case FlightSortType.price:
-          listToSort.sort(
-            (a, b) =>
-                direction *
-                a.fare!.publishedFare!.compareTo(b.fare!.publishedFare!),
-          );
+          listToSort.sort((a, b) {
+            final aPrice = a.fare?.publishedFare ?? double.infinity;
+            final bPrice = b.fare?.publishedFare ?? double.infinity;
+            return direction * aPrice.compareTo(bPrice);
+          });
           break;
       }
     }
@@ -545,15 +561,41 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
     sortFlightList(flights2);
   }
 
+// === Safe helper methods ===
+  DateTime _getDepTimeSafe(SearchResult result) {
+    try {
+      return DateTime.parse(
+          result.segments?[0][0].origin?.depTime?.toString() ?? '');
+    } catch (_) {
+      return DateTime.fromMillisecondsSinceEpoch(0); // fallback time
+    }
+  }
+
+  int _getDurationSafe(SearchResult result) {
+    try {
+      return result.segments?[0][0].duration ?? 999999;
+    } catch (_) {
+      return 999999;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    final all = widget.flightSearchResponse.data!.searchResult!;
-    allFlights = all.expand((e) => e).toList(); // One flat list of all flights
+    final all = widget.flightSearchResponse.data?.searchResult ?? [];
 
-    flights = List.from(allFlights); // Initially show all
-    flights2 = all[1]; // still used for round trip
+    allFlights = all.expand((e) => e).toList(); // Flatten
+
+    flights = List.from(allFlights);
+
+    if (all.length > 1) {
+      flights2 = all[1]; // Return flights
+    } else {
+      flights2 = [];
+      print("! Only one direction of flight data found. Return flights missing.");
+    }
+
     _scrollController1.addListener(_onScroll);
     _scrollController2.addListener(_onScroll);
   }
@@ -577,15 +619,37 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
     super.dispose();
   }
 
-  bool get _isFlightSelected =>
-      selectedOnwardIndex != null && selectedReturnIndex != null;
+  bool get _isFlightSelected {
+    final isInternational = flights.isNotEmpty && isInternationalTrip(flights[0]);
+    if (selectedFareFromUpsell != null) return true;
+
+    return isInternational
+        ? selectedOnwardIndex != null
+        : selectedOnwardIndex != null && selectedReturnIndex != null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final price = flights[selectedOnwardIndex ?? 0].fare!.publishedFare!.floor() + flights2[selectedReturnIndex ?? 0].fare!.publishedFare!.floor();
-    bool isNonStop = true;
+    double price = 0;
+    bool isInternational = false;
+    if (flights.isNotEmpty) {
+      isInternational = isInternationalTrip(flights[0]);
+    } else if (flights2.isNotEmpty) {
+      isInternational = isInternationalTrip(flights2[0]);
+    }
+
+    if (selectedFareFromUpsell != null) {
+      price = selectedFareFromUpsell!.fare?.publishedFare?.floorToDouble() ?? 0;
+    } else if (flights.isNotEmpty && selectedOnwardIndex != null) {
+      price = flights[selectedOnwardIndex!].fare!.publishedFare!.floorToDouble();
+    }
+
+    if (flights2.isNotEmpty && selectedReturnIndex != null) {
+      price += flights2[selectedReturnIndex!].fare!.publishedFare!.floorToDouble();
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -593,18 +657,18 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
         children: [
           ResponsiveAppBar(
             title: "${widget.fromCity} to ${widget.toCity}",
-            subtitle:
-                "${DateFormat('EEE dd MMM').format(widget.departureDate)} | ${widget.adultCount} Adult",
+            subtitle: "${DateFormat('EEE dd MMM').format(widget.departureDate)} | ${widget.adultCount} Adult",
             onFilter: () {},
             onMore: () {},
           ),
+
+          // Header with from-to
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             color: Colors.grey.shade200,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left section (DEL - BOM)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(0, 10, 0, 5),
@@ -618,16 +682,12 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
                     ),
                   ),
                 ),
-
-                // Full height vertical divider
                 Container(
                   width: 2,
-                  height: 40, // Match height of the tallest content
+                  height: 40,
                   color: Colors.black26,
                   margin: const EdgeInsets.symmetric(horizontal: 12),
                 ),
-
-                // Right section (BOM - DEL)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(0, 10, 0, 5),
@@ -646,6 +706,8 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
               ],
             ),
           ),
+
+          // Sort/filter header
           FilterHeader(
             screenWidth: screenWidth,
             screenHeight: screenHeight,
@@ -654,231 +716,219 @@ class _RoundTripListScreenState extends State<RoundTripListScreen> {
             onSortSelected: (FlightSortType sortType) {
               setState(() {
                 if (selectedSortType == sortType) {
-                  sortOrder =
-                      sortOrder == SortOrder.ascending
-                          ? SortOrder.descending
-                          : SortOrder.ascending;
+                  sortOrder = sortOrder == SortOrder.ascending
+                      ? SortOrder.descending
+                      : SortOrder.ascending;
                 } else {
                   selectedSortType = sortType;
                   sortOrder = SortOrder.ascending;
                 }
-                _sortFlights(); // Make sure this sorts BOTH departure and return flights if round trip
+                _sortFlights();
               });
             },
           ),
 
           Expanded(
-            child: Row(
+            child: isInternational
+                ? buildFlightList(
+              flights,
+              selectedOnwardIndex,
+              _scrollController1,
+                  (index) {
+                setState(() {
+                  selectedOnwardIndex =
+                  selectedOnwardIndex == index ? null : index;
+                  // Clear return selection for international
+                  selectedReturnIndex = null;
+                });
+              },
+            )
+                : (flights2.isEmpty
+                ? buildFlightList(
+              flights,
+              selectedOnwardIndex,
+              _scrollController1,
+                  (index) {
+                setState(() {
+                  selectedOnwardIndex =
+                  selectedOnwardIndex == index ? null : index;
+                });
+              },
+            )
+                : Row(
               children: [
                 Expanded(
-                  child: ListView.separated(
-                    controller: _scrollController1,
-                    padding: EdgeInsets.zero,
-                    itemCount: flights.length,
-                    separatorBuilder:
-                        (_, __) => Divider(thickness: 2, height: 0),
-                    itemBuilder: (context, index) {
-                      final flight = flights[index];
-                      final isSelected = selectedOnwardIndex == index;
-                      return GestureDetector(
-                        onTap:
-                            () => setState(() {
-                              selectedOnwardIndex =
-                                  selectedOnwardIndex == index ? null : index;
-                            }),
-                        child: FlightContainer(
-                          flight: flight,
-                          selected: isSelected,
-                          screenWidth: MediaQuery.of(context).size.width,
-                        ),
-                      );
+                  child: buildFlightList(
+                    flights,
+                    selectedOnwardIndex,
+                    _scrollController1,
+                        (index) {
+                      setState(() {
+                        selectedOnwardIndex =
+                        selectedOnwardIndex == index ? null : index;
+                      });
                     },
                   ),
                 ),
-                VerticalDivider(thickness: 2, width: 2),
+                const VerticalDivider(thickness: 2, width: 2),
                 Expanded(
-                  child: ListView.separated(
-                    controller: _scrollController2,
-                    padding: EdgeInsets.zero,
-                    itemCount: flights2.length,
-                    separatorBuilder:
-                        (_, __) => Divider(thickness: 2, height: 0),
-                    itemBuilder: (context, index) {
-                      final flight = flights2[index];
-                      final isSelected = selectedReturnIndex == index;
-                      return GestureDetector(
-                        onTap:
-                            () => setState(() {
-                              selectedReturnIndex =
-                                  selectedReturnIndex == index ? null : index;
-                            }),
-                        child: FlightContainer(
-                          flight: flight,
-                          selected: isSelected,
-                          screenWidth: MediaQuery.of(context).size.width,
-                        ),
-                      );
+                  child: buildFlightList(
+                    flights2,
+                    selectedReturnIndex,
+                    _scrollController2,
+                        (index) {
+                      setState(() {
+                        selectedReturnIndex =
+                        selectedReturnIndex == index ? null : index;
+                      });
                     },
                   ),
                 ),
               ],
-            ),
-          ),
+            )),
+          )
         ],
       ),
 
-      bottomSheet:
-          _isFlightSelected
-              ? buildBottomBar(context, (){
-                _navigatorFunc(price);
-          },price: price)
-              : (_isScrolling
-                  ? null
-                  : FlightFilterBottomSheet(
-                    onFilterTap: _openFilterSheet,
-                    onNonStopChanged: _onNonStopChanged,
-                    onTimeTap: _openTimeFilterSheet,
-                    onAirlineTap: _openAirlineFilterSheet,
-                    onSortTap: _openSortSheet,
-                  )),
+      // Bottom bar
+      bottomSheet: _isFlightSelected
+          ? buildBottomBar(
+        context,
+            () {
+          _navigatorFunc(price.toInt());
+        },
+        price: price.toInt(),
+      )
+          : (_isScrolling
+          ? null
+          : FlightFilterBottomSheet(
+        onFilterTap: _openFilterSheet,
+        onNonStopChanged: _onNonStopChanged,
+        onTimeTap: _openTimeFilterSheet,
+        onAirlineTap: _openAirlineFilterSheet,
+        onSortTap: _openSortSheet,
+      )),
     );
   }
+
+  Widget buildFlightList(
+      List<SearchResult> flightList,
+      int? selectedIndex,
+      ScrollController controller,
+      Function(int) onTap,
+      ) {
+    // Check if any flight is international
+    final hasInternational = flightList.any((flight) => isInternationalTrip(flight));
+
+    return ListView.separated(
+      controller: controller,
+      padding: EdgeInsets.zero,
+      itemCount: flightList.length,
+      separatorBuilder: (_, __) => const Divider(thickness: 2, height: 0),
+      itemBuilder: (context, index) {
+        final flight = flightList[index];
+        final isSelected = selectedIndex == index;
+
+        // Use only one type of container based on list type
+        return GestureDetector(
+          onTap: () async {
+            setState(() {
+              onTap(index); // Visually select
+              selectedOnwardIndex = index;
+              if (isInternationalTrip(flight)) {
+                selectedReturnIndex = null;
+              }
+            });
+
+            if (hasInternational) {
+              selectedFareFromUpsell = null;
+
+              final upsellVM = Provider.of<UpsellViewModel>(context, listen: false);
+              final body = {
+                "TraceId": widget.flightSearchResponse.data?.traceId ?? "",
+                "ResultIndex": flights[selectedOnwardIndex!].resultIndex ?? "",
+              };
+
+              await upsellVM.fetchUpsellDetails(body);
+
+              if (!context.mounted) return;
+
+              if (upsellVM.upsellModel?.data?.results?.isNotEmpty ?? false) {
+                final SelectedUpsellData? selectedUpsell = await showModalBottomSheet<SelectedUpsellData>(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (context) => FractionallySizedBox(
+                    heightFactor: 0.7, // Show 70% of the screen
+                    child: UpsellBottomSheet(
+                      traceId: widget.flightSearchResponse.data?.traceId ?? "",
+                      resultIndex: flights[selectedOnwardIndex!].resultIndex ?? "",
+                    ),
+                  ),
+                );
+                print("⏎ Returned from bottom sheet: $selectedUpsell");
+                if (selectedUpsell != null) {
+                  setState(() {
+                    selectedFareFromUpsell = selectedUpsell.result;
+                    selectedFareFromUpsellPrice = selectedUpsell.price;
+                  });
+
+                  print("✅ Fare set: ₹${selectedUpsell.price}");
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("No alternate fares available.")),
+                );
+              }
+            }
+          },
+          child: hasInternational
+              ? FlightContainerForInternational(
+            flight: flight,
+            selected: selectedOnwardIndex == index,
+            screenWidth: MediaQuery.of(context).size.width,
+          )
+              : FlightContainer(
+            flight: flight,
+            selected: isSelected,
+            screenWidth: MediaQuery.of(context).size.width,
+          ),
+        );
+
+      },
+    );
+  }
+
+  bool isInternationalTrip(SearchResult flight) {
+    final onwardSegment = flight.segments?[0][0];
+    final returnSegment = flight.segments?.length == 2 ? flight.segments![1][0] : null;
+
+    final onwardOrigin = onwardSegment?.origin?.airport?.countryCode;
+    final onwardDest = onwardSegment?.destination?.airport?.countryCode;
+
+    final returnOrigin = returnSegment?.origin?.airport?.countryCode;
+    final returnDest = returnSegment?.destination?.airport?.countryCode;
+
+    bool isOnwardInternational = onwardOrigin != null &&
+        onwardDest != null &&
+        onwardOrigin.toUpperCase() != onwardDest.toUpperCase();
+
+    bool isReturnInternational = returnOrigin != null &&
+        returnDest != null &&
+        returnOrigin.toUpperCase() != returnDest.toUpperCase();
+
+    return isOnwardInternational || isReturnInternational;
+  }
+
 }
 /*
 enum SortOrder { ascending, descending }
 enum FlightSortType { departure, duration, price }
 */
 
-class FlightContainer extends StatelessWidget {
-  final SearchResult flight;
-  final bool selected;
-  final double screenWidth;
 
-  const FlightContainer({
-    required this.flight,
-    required this.selected,
-    required this.screenWidth,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    String formatDuration(int minutes) {
-      final hours = minutes ~/ 60;
-      final mins = minutes % 60;
-      return '${hours}h ${mins}m';
-    }
-
-    final List<Map<String, String>> airlines = [
-      {
-        "name": "Air India",
-        "logo":
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-QO8gVe353NPaAV3wid57LAtWqIdet-EVMA&s",
-      },
-      {
-        "name": "Air India Express",
-        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/IX.png",
-      },
-      {
-        "name": "Indigo",
-        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/6E.png",
-      },
-      {
-        "name": "Vistara",
-        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/UK.png",
-      },
-      {
-        "name": "SpiceJet",
-        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/SG.png",
-      },
-      {
-        "name": "GoAir",
-        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/G8.png",
-      },
-    ];
-
-    String getAirlineLogo(String airlineName) {
-      final airline = airlines.firstWhere(
-        (airline) =>
-            airline['name']!.toLowerCase() == airlineName.toLowerCase(),
-        orElse:
-            () => {"logo": "https://via.placeholder.com/50"}, // fallback image
-      );
-      return airline['logo']!;
-    }
-
-    String formatFlightTime(String timeString) {
-      final dateTime = DateTime.parse(timeString);
-      final formattedTime = DateFormat.Hm().format(
-        dateTime,
-      ); // 24-hour format e.g., 23:00
-      return formattedTime;
-    }
-
-    return Container(
-      padding: EdgeInsets.all(screenWidth * 0.03),
-      color: selected ? Colors.blue.shade50 : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Image.network(
-                getAirlineLogo(flight.segments![0][0].airline!.airlineName!),
-                height: 24,
-                width: 24,
-              ),
-              SizedBox(width: 8),
-              Text(
-                "${flight.segments![0][0].airline!.airlineCode!}-${flight.segments![0][0].airline!.flightNumber!}",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-              Spacer(),
-              Text(
-                "₹ ${flight.fare!.publishedFare!.floor()}",
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                formatFlightTime(
-                  flight.segments![0][0].origin!.depTime!.toString(),
-                ),
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-              Column(
-                children: [
-                  Text(
-                    formatDuration(flight.segments![0][0].duration!),
-                    style: TextStyle(fontSize: 12, color: Colors.black87),
-                  ),
-                  Container(height: 2, color: Colors.black),
-                  Text(
-                    "${flight.segments![0].length - 1} stop(s)",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-              Text(
-                formatFlightTime(
-                  flight.segments![0][0].destination!.arrTime!.toString(),
-                ),
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 enum SortOrder { ascending, descending }
 
@@ -891,7 +941,7 @@ class FilterHeader extends StatelessWidget {
   final FlightSortType selectedSortType;
   final SortOrder sortOrder;
 
-  const FilterHeader({
+  const FilterHeader({super.key, 
     required this.screenWidth,
     required this.screenHeight,
     required this.onSortSelected,
@@ -973,3 +1023,5 @@ class FilterHeader extends StatelessWidget {
     );
   }
 }
+
+

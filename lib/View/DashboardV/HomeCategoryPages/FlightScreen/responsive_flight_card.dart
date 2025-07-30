@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,6 +16,7 @@ class ResponsiveFlightCard extends StatelessWidget {
   final String airlineName;
   final double screenWidth;
   final String img;
+  final VoidCallback? onMoreFareTap;
 
   const ResponsiveFlightCard({
     super.key,
@@ -29,7 +31,8 @@ class ResponsiveFlightCard extends StatelessWidget {
     required this.price,
     required this.airlineName,
     required this.screenWidth,
-    required this.img
+    required this.img,
+    required this.onMoreFareTap,
   });
 
   @override
@@ -42,6 +45,7 @@ class ResponsiveFlightCard extends StatelessWidget {
         return '';
       }
     }
+
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -61,8 +65,14 @@ class ResponsiveFlightCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Image.network(img,
-                            height: screenWidth * 0.075),
+                        img.toLowerCase().endsWith(".png")
+                            ? Image.network(img, height: screenWidth * 0.050)
+                            : SvgPicture.network(
+                          img,
+                          height: screenWidth * 0.075,
+                          placeholderBuilder: (context) => SizedBox(),
+                          errorBuilder: (context, error, stackTrace) => Icon(Icons.flight, size: screenWidth * 0.075),
+                        ),
                         SizedBox(width: screenWidth * 0.02),
                         Text(
                           departure,
@@ -73,10 +83,10 @@ class ResponsiveFlightCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: 5,),
+                    SizedBox(height: 5),
                     Text(
-                        formatDateLabel(departureDate),
-                        style: GoogleFonts.poppins(fontSize: 10)
+                      formatDateLabel(departureDate),
+                      style: GoogleFonts.poppins(fontSize: 10),
                     ),
                   ],
                 ),
@@ -99,9 +109,7 @@ class ResponsiveFlightCard extends StatelessWidget {
                     SizedBox(height: screenWidth * 0.01),
                     Text(
                       stops,
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.035,
-                      ),
+                      style: GoogleFonts.poppins(fontSize: screenWidth * 0.035),
                     ),
                   ],
                 ),
@@ -115,10 +123,10 @@ class ResponsiveFlightCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 5,),
+                    SizedBox(height: 5),
                     Text(
-                        formatDateLabel(arrivalDate),
-                        style: GoogleFonts.poppins(fontSize: 10)
+                      formatDateLabel(arrivalDate),
+                      style: GoogleFonts.poppins(fontSize: 10),
                     ),
                   ],
                 ),
@@ -157,16 +165,14 @@ class ResponsiveFlightCard extends StatelessWidget {
                     Text(
                       airlineName,
                       style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.038,
+                        fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.005),
                     Text(
                       flightNo,
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.03,
-                      ),
+                      style: GoogleFonts.poppins(fontSize: screenWidth * 0.03),
                     ),
                   ],
                 ),
@@ -174,12 +180,15 @@ class ResponsiveFlightCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      "+ More Fare",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.035,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blueAccent,
+                    GestureDetector(
+                      onTap: onMoreFareTap,
+                      child: Text(
+                        "+ More Fare",
+                        style: GoogleFonts.poppins(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blueAccent,
+                        ),
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.01),

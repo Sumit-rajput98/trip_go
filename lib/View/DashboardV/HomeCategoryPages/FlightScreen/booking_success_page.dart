@@ -1,17 +1,32 @@
+import 'dart:io';
+import 'package:open_file/open_file.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:trip_go/Model/FlightM/flight_booking_details.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/ticket_view.dart';
 import 'package:trip_go/constants.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../../../ViewM/CabVM/flight_ticket_download_view_model.dart';
 import '../../../../ViewM/FlightVM/flight_booking_details_view_model.dart';
 
 class BookingSuccessPage extends StatefulWidget {
+  final bool? isInternational;
   final String? pnr;
   final String? traceId;
   final String? bookingId;
   final int? paymentPrice;
 
-  const BookingSuccessPage({super.key,required this.paymentPrice, required this.pnr, required this.traceId, required this.bookingId});
+  const BookingSuccessPage({
+    super.key,
+    this.isInternational,
+    required this.paymentPrice,
+    required this.pnr,
+    required this.traceId,
+    required this.bookingId,
+  });
 
   @override
   State<BookingSuccessPage> createState() => _BookingSuccessPageState();
@@ -19,43 +34,95 @@ class BookingSuccessPage extends StatefulWidget {
 
 class _BookingSuccessPageState extends State<BookingSuccessPage> {
   late final FlightBookingDetailsViewModel viewModel;
-
+  late final FlightTicketDownloadViewModel _flightDownloadViewModel;
   @override
   void initState() {
     super.initState();
+    print("@@@@@@@@@ ${widget.isInternational}");
+    _flightDownloadViewModel = FlightTicketDownloadViewModel();
     viewModel = FlightBookingDetailsViewModel();
     fetchBookingDetails();
   }
 
   Future<void> fetchBookingDetails() async {
     await viewModel.loadBookingDetails(
-      traceId: widget.traceId ?? "",
-      pnr: widget.pnr ?? "",
-      bookingId: widget.bookingId ?? "",
+      traceId: widget.traceId!,
+      pnr: widget.pnr!,
+      bookingId: widget.bookingId!,
     );
-    setState(() {}); // Trigger rebuild after data is loaded
+    setState(() {});
   }
 
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return "N/A";
+    return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
+  }
+
+  String _formatDuration(int? minutes) {
+    if (minutes == null) return "N/A";
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    return '${hours}h ${remainingMinutes}min';
+  }
+
+  String _calculateTotalDuration(Segment? first, Segment? last) {
+    if (first == null || last == null) return "N/A";
+
+    final depTime = first.origin?.depTime;
+    final arrTime = last.destination?.arrTime;
+
+    if (depTime == null || arrTime == null) return "N/A";
+
+    final totalMinutes = arrTime.difference(depTime).inMinutes;
+    return _formatDuration(totalMinutes);
+  }
+
+  String _getGenderString(int? gender) {
+    if (gender == 1) return 'M';
+    if (gender == 2) return 'F';
+    return '';
+  }
+
+  int _getAgeFromDOB(DateTime? dob) {
+    if (dob == null) return 0;
+    final today = DateTime.now();
+    int age = today.year - dob.year;
+    if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
+      age--;
+    }
+    return age;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bookingDetails = viewModel.bookingDetails;
-    final itinerary = bookingDetails?.data.itinerary;
-    final fare = itinerary?.fare;
-    final passengers = itinerary?.passengers ?? [];
+    print("@@@@@@@@@ ${widget.isInternational}");
+    if (viewModel.isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final itinerary = viewModel.bookingDetails!.data!.flightItinerary!;
+    final passengers = itinerary.passenger ?? [];
+    final segments = itinerary.segments ?? [];
+    final onwardSegments = segments.where((s) => s.tripIndicator == 1).toList();
+    final firstSegment = onwardSegments.isNotEmpty ? onwardSegments.first : null;
+    final lastSegment = onwardSegments.isNotEmpty ? onwardSegments.last : null;
+
+    final returnSegments = segments.where((s) => s.tripIndicator == 2).toList();
+    final firstReturnSegment = returnSegments.isNotEmpty ? returnSegments.first : null;
+    final lastReturnSegment = returnSegments.isNotEmpty ? returnSegments.last : null;
+
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        title: Text(''),
+        title: const Text(''),
         backgroundColor: Colors.blue.shade50,
         elevation: 0,
-        leading: BackButton(color: Colors.black),
+        leading: const BackButton(color: Colors.black),
       ),
-      body: viewModel.isLoading
-          ? Center(child: CircularProgressIndicator())
-          : viewModel.errorMessage != null
-          ? Center(child: Text('Error: ${viewModel.errorMessage}'))
-          : Padding(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
@@ -67,47 +134,63 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                   SizedBox(width: 8),
                   Text(
                     "Booking Successful",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'poppins',
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
-              // Text("Amount paid: ${fare?.publishedFare}", style: TextStyle(fontSize: 16, fontFamily: 'poppins')),
-              Text("Amount paid: ${widget.paymentPrice}", style: TextStyle(fontSize: 16, fontFamily: 'poppins')),
-              Text("Booking ID: ${itinerary?.bookingId}", style: TextStyle(color: Colors.grey, fontFamily: 'poppins')),
-              SizedBox(height: 16),
-              _trainInfoCard(),
-              SizedBox(height: 20),
-              _passengerInfo(),
-              SizedBox(height: 16),
+              const SizedBox(height: 8),
+              Text(
+                "Amount paid: ₹${widget.paymentPrice}",
+                style: const TextStyle(fontSize: 16, fontFamily: 'poppins'),
+              ),
+              Text(
+                "Booking ID: ${itinerary.bookingId}",
+                style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+              ),
+              const SizedBox(height: 16),
+              if (firstSegment != null && lastSegment != null)
+                _flightInfoCard(firstSegment, lastSegment, itinerary),
+
+              if (widget.isInternational == true)
+              _flightInfoCard1(firstReturnSegment!, lastReturnSegment!, itinerary),
+              const SizedBox(height: 20),
+              _passengerInfo(passengers, firstSegment),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _actionButton("Book Return Ticket", (){}),
-                  _actionButton("Download Ticket", (){
-                    final bookingDetails = viewModel.bookingDetails;
-                    final itinerary = bookingDetails?.data.itinerary;
-                    final passengers = itinerary?.passengers ?? [];
-                    final segments = itinerary?.segments ?? [];
-                    Navigator.push(context, MaterialPageRoute(builder: (context)=> TicketPage(
-                      itinerary: itinerary,
-                      passengers: passengers,
-                      segments: segments,
-                    )));
+                  _actionButton("Book Return Ticket", () {}),
+                  _actionButton("Download Ticket", () async {
+                    final bytes = await _flightDownloadViewModel.downloadFlightTicket(
+                      bookingId: itinerary.bookingId.toString(),
+                    );
+
+                    if (bytes != null) {
+                      final dir = await getTemporaryDirectory();
+                      final file = File('${dir.path}/FlightTicket_${DateTime.now().millisecondsSinceEpoch}.pdf');
+                      await file.writeAsBytes(bytes);
+
+                      if (kDebugMode) print("PDF saved to: ${file.path}");
+
+                      await OpenFile.open(file.path);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to download ticket')),
+                      );
+                    }
                   }),
+
                 ],
               ),
-              SizedBox(height: 10),
-              Text("We have sent the ticket to:\n${passengers[0].email}", style: TextStyle(color: Colors.grey, fontFamily: 'poppins')),
-              // TextButton(onPressed: () {}, child: Text("Resend", style: TextStyle(color: Colors.grey, fontFamily: 'poppins')), ),
-              // SizedBox(height: 20),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-              //   children: [
-              //     _footerAction(CupertinoIcons.train_style_one, "View train route"),
-              //     _footerAction(Icons.cancel, "Cancel booking"),
-              //   ],
-              // ),
+              const SizedBox(height: 10),
+              Text(
+                "We have sent the ticket to:\n${passengers.isNotEmpty ? passengers[0].email : "N/A"}",
+                style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+              ),
             ],
           ),
         ),
@@ -115,23 +198,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
     );
   }
 
-  Widget _trainInfoCard() {
-    String _formatDateTime(String rawDateTime) {
-      try {
-        final dateTime = DateTime.parse(rawDateTime);
-        final formatter = DateFormat('dd MMM yyyy, hh:mm a');
-        return formatter.format(dateTime);
-      } catch (e) {
-        return rawDateTime;
-      }
-    }
-
-    final bookingDetails = viewModel.bookingDetails;
-    final itinerary = bookingDetails?.data.itinerary;
-    final fare = itinerary?.fare;
-    final passengers = itinerary?.passengers ?? [];
-    final segments = itinerary?.segments ?? [];
-
+  Widget _flightInfoCard(Segment firstSegment, Segment lastSegment, FlightItinerary itinerary) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 3,
@@ -141,45 +208,85 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "${segments[0].airlineName} (${segments[0].flightNumber})",
-              style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+              "${firstSegment.airline!.airlineName} (${firstSegment.airline!.flightNumber})",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
             ),
             Text(
-              "Second sitting - General",
-              style: TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+              "Class: ${_getCabinClass(firstSegment.cabinClass)}",
+              style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
             ),
-            Divider(),
+            const Divider(),
 
-            /// Boarding row
+            // Origin
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _formatDateTime(segments[0].depTime),
+                      _formatDateTime(firstSegment.origin!.depTime),
                       style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
                     ),
                     Text(
-                      "Terminal : ${segments[0].originTerminal}",
-                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
+                      "Terminal: ${firstSegment.origin!.airport!.terminal}",
+                      style: const TextStyle(
+                          color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-                SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text("Origin", style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
+                      const Text("Origin",
+                          style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
                       Text(
-                        "${segments[0].originAirportCode} • ${segments[0].originAirportName}",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
-                        softWrap: true,
+                        "${firstSegment.origin!.airport!.airportCode} • ${firstSegment.origin!.airport!.airportName}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
+                        textAlign: TextAlign.right,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Destination
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDateTime(lastSegment.destination!.arrTime),
+                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
+                    ),
+                    Text(
+                      "Terminal: ${lastSegment.destination!.airport!.terminal}",
+                      style: const TextStyle(
+                          color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text("Destination",
+                          style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
+                      Text(
+                        "${lastSegment.destination!.airport!.airportCode} • ${lastSegment.destination!.airport!.airportName}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
                         textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -187,58 +294,34 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
               ],
             ),
             const SizedBox(height: 8),
+            const Divider(),
 
-            /// Drop-off row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      _formatDateTime(segments[0].arrTime),
-                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
-                    ),
-                    Text(
-                      "Terminal : ${segments[0].destinationTerminal}",
-                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("Destination", style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
-                      Text(
-                        "${segments[0].destinationAirportCode} • ${segments[0].destinationAirportName}",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
-                        softWrap: true,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Divider(),
-
-            /// Duration + PNR
+            // Duration + PNR
             Row(
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Duration 1h 45min", style: TextStyle(color: Colors.grey, fontFamily: 'poppins')),
-                    Text("PNR: ${itinerary?.pnr}", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins')),
+                    Text(
+                      "Duration: ${_calculateTotalDuration(firstSegment, lastSegment)}",
+                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+                    ),
+                    Text(
+                      "PNR: ${itinerary.pnr}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+                    ),
                   ],
                 ),
-                Spacer(),
-                Icon(Icons.copy, size: 18),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: itinerary.pnr!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("PNR copied to clipboard")),
+                    );
+                  },
+                  child: const Icon(Icons.copy, size: 18),
+                ),
               ],
             ),
           ],
@@ -247,12 +330,154 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
     );
   }
 
-  Widget _passengerInfo() {
-    final bookingDetails = viewModel.bookingDetails;
-    final itinerary = bookingDetails?.data.itinerary;
-    final passengers = itinerary?.passengers ?? [];
-    final segments =itinerary?.segments ?? [];
+  Widget _flightInfoCard1(Segment firstSegment, Segment lastSegment, FlightItinerary itinerary) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "${firstSegment.airline!.airlineName} (${firstSegment.airline!.flightNumber})",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+            ),
+            Text(
+              "Class: ${_getCabinClass(firstSegment.cabinClass)}",
+              style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+            ),
+            const Divider(),
 
+            // Origin
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDateTime(firstSegment.origin!.depTime),
+                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
+                    ),
+                    Text(
+                      "Terminal: ${firstSegment.origin!.airport!.terminal}",
+                      style: const TextStyle(
+                          color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text("Origin",
+                          style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
+                      Text(
+                        "${firstSegment.origin!.airport!.airportCode} • ${firstSegment.origin!.airport!.airportName}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Destination
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDateTime(lastSegment.destination!.arrTime),
+                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12),
+                    ),
+                    Text(
+                      "Terminal: ${lastSegment.destination!.airport!.terminal}",
+                      style: const TextStyle(
+                          color: Colors.grey, fontFamily: 'poppins', fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text("Destination",
+                          style: TextStyle(color: Colors.grey, fontFamily: 'poppins', fontSize: 12)),
+                      Text(
+                        "${lastSegment.destination!.airport!.airportCode} • ${lastSegment.destination!.airport!.airportName}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins', fontSize: 12),
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Divider(),
+
+            // Duration + PNR
+            Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Duration: ${_calculateTotalDuration(firstSegment, lastSegment)}",
+                      style: const TextStyle(color: Colors.grey, fontFamily: 'poppins'),
+                    ),
+                    Text(
+                      "PNR: ${itinerary.pnr}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: itinerary.pnr!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("PNR copied to clipboard")),
+                    );
+                  },
+                  child: const Icon(Icons.copy, size: 18),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCabinClass(int? cabinClass) {
+    switch (cabinClass) {
+      case 1:
+        return "Economy";
+      case 2:
+        return "Premium Economy";
+      case 3:
+        return "Business";
+      case 4:
+        return "First Class";
+      default:
+        return "N/A";
+    }
+  }
+
+  Widget _passengerInfo(List<Passenger> passengers, Segment? segment) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 2,
@@ -261,66 +486,43 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
-                Text("Passenger details", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins')),
+            const Row(
+              children: [
+                Text(
+                  "Passenger details",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'poppins'),
+                ),
                 Spacer(),
                 Icon(Icons.info_outline, size: 18),
               ],
             ),
             const Divider(),
-            // Display first two passengers (if they exist)
-            for (int i = 0; i < passengers.length && i < 2; i++)
+
+            // Show all passengers
+            for (final passenger in passengers)
               _passengerRow(
-                "${passengers[i].firstName} ${passengers[i].lastName} (${_getAgeFromDOB(passengers[i].dateOfBirth)} ${_getGenderString(passengers[i].gender)})",
-                "${passengers[i].paxId}", // Replace with seat if you have seat info
-                segments.isNotEmpty ? segments[0].flightStatus : "No status", // Replace with actual status if available
+                "${passenger.title} ${passenger.firstName} ${passenger.lastName}",
+                "Age: ${_getAgeFromDOB(passenger.dateOfBirth)} ${_getGenderString(passenger.gender)}",
               ),
-            if (passengers.length > 2)
-              Text("+${passengers.length - 2} more", style: const TextStyle(color: Colors.blue, fontFamily: 'poppins')),
           ],
         ),
       ),
     );
   }
 
-// Helper function to calculate age from date of birth
-  int _getAgeFromDOB(String dob) {
-    final birthDate = DateTime.tryParse(dob);
-    if (birthDate == null) return 0;
-    final today = DateTime.now();
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month || (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
 
-// Helper function to convert gender int to string
-  String _getGenderString(int gender) {
-    // Assuming 1 = Male, 2 = Female (adjust if your API uses different codes)
-    if (gender == 1) return 'M';
-    if (gender == 2) return 'F';
-    return '';
-  }
-
-// Example of _passengerRow widget
-  Widget _passengerRow(String name, String seat, String status) {
+  Widget _passengerRow(String name, String details) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text(name, style: const TextStyle(fontFamily: 'poppins', fontSize: 12))),
-          Text(seat, style: const TextStyle(fontFamily: 'poppins', fontSize: 12)),
-          SizedBox(width: 2,),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(10)),
-            child: Text(status, style: TextStyle(color: Colors.green, fontFamily: 'poppins', fontSize: 12)),
+          Expanded(
+            child: Text(name,
+                style: const TextStyle(fontFamily: 'poppins', fontSize: 12)),
           ),
+          Text(details,
+              style: const TextStyle(fontFamily: 'poppins', fontSize: 12)),
         ],
       ),
     );
@@ -335,18 +537,8 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'poppins', color: Colors.white),
+        style: const TextStyle(fontFamily: 'poppins', color: Colors.white, fontSize: 12),
       ),
     );
   }
-
-  // Widget _footerAction(IconData icon, String label) {
-  //   return Column(
-  //     children: [
-  //       Icon(icon, color: constants.themeColor1),
-  //       SizedBox(height: 4),
-  //       Text(label, style: TextStyle(fontSize: 12, fontFamily: 'poppins')),
-  //     ],
-  //   );
-  // }
 }

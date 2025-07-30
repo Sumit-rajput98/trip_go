@@ -10,13 +10,13 @@ class CustomTextField extends StatelessWidget {
   final TextInputType keyboardType;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.label,
     required this.hint,
     this.validator,
     this.keyboardType = TextInputType.text,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

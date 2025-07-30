@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trip_go/Model/FlightM/flight_SSR_model_lcc.dart';
+import 'package:provider/provider.dart';
 import 'package:trip_go/Model/FlightM/flight_SSR_round_model.dart';
 import 'package:trip_go/constants.dart';
 
+import '../../../../../ViewM/FlightVM/meal_selection_round_provider.dart';
+
 class MealsAddOnsRoundPage extends StatefulWidget {
   final Data1? flightSsrRes;
-  const MealsAddOnsRoundPage({super.key, this.flightSsrRes});
+  final bool isReturn;
+  const MealsAddOnsRoundPage({
+    super.key,
+    this.flightSsrRes,
+    required this.isReturn
+  });
 
   @override
   State<MealsAddOnsRoundPage> createState() => _MealsAddOnsRoundPageState();
@@ -15,6 +22,19 @@ class MealsAddOnsRoundPage extends StatefulWidget {
 class _MealsAddOnsRoundPageState extends State<MealsAddOnsRoundPage> {
   List<Map<String, dynamic>> meals = [];
 
+  MealDynamic _mapToMeal(Map<String, dynamic> item) {
+    return MealDynamic(
+      code: item['code'],
+      airlineCode: item['airlineCode'],
+      flightNumber: item['flightNumber'],
+      price: item['price'],
+      currency: item['currency'],
+      origin: item['origin'],
+      destination: item['destination'],
+      airlineDescription: item['name'],
+      description: item['desc'],
+    );
+  }
   @override
   void initState() {
     super.initState();
@@ -39,7 +59,6 @@ class _MealsAddOnsRoundPageState extends State<MealsAddOnsRoundPage> {
       }).toList();
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -212,9 +231,14 @@ class _MealsAddOnsRoundPageState extends State<MealsAddOnsRoundPage> {
   }
 
   Widget _buildCounterControls(Map<String, dynamic> item, bool isTablet) {
+    final provider = Provider.of<MealSelectionRoundProvider>(context);
+
     return item['count'] == 0
         ? ElevatedButton(
-      onPressed: () => setState(() => item['count'] = 1),
+      onPressed: () {
+        setState(() => item['count'] = 1);
+        provider.addMeal(_mapToMeal(item), isReturn: widget.isReturn);
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF1B499F),
         shape: RoundedRectangleBorder(
@@ -243,7 +267,12 @@ class _MealsAddOnsRoundPageState extends State<MealsAddOnsRoundPage> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => setState(() => item['count']--),
+            onPressed: () {
+              setState(() => item['count']--);
+              if (item['count'] <= 0) {
+                provider.removeMeal(item['code'], isReturn: widget.isReturn);
+              }
+            },
             icon: Icon(Icons.remove, color: Colors.red.shade400),
             iconSize: isTablet ? 28 : 24,
             padding: EdgeInsets.zero,
@@ -259,7 +288,10 @@ class _MealsAddOnsRoundPageState extends State<MealsAddOnsRoundPage> {
             ),
           ),
           IconButton(
-            onPressed: () => setState(() => item['count']++),
+            onPressed: () {
+              setState(() => item['count']++);
+              provider.addMeal(_mapToMeal(item), isReturn: widget.isReturn);
+            },
             icon: Icon(Icons.add, color: const Color(0xFF1B499F)),
             iconSize: isTablet ? 28 : 24,
             padding: EdgeInsets.zero,

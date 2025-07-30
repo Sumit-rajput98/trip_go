@@ -10,7 +10,7 @@ class CustomCalendarDialog extends StatefulWidget {
 }
 
 class _CustomCalendarDialogState extends State<CustomCalendarDialog> {
-  DateTime _focusedDay = DateTime.now();
+  final DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
   @override

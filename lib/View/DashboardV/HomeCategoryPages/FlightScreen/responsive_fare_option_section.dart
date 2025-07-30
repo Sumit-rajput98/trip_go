@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:trip_go/Model/FlightM/flight_quote_model.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/common_widget/loading_screen.dart';
 import 'package:trip_go/ViewM/FlightVM/flight_quote_view_model.dart';
 import '../../../../Model/FlightM/flight_search_model.dart';
+import '../../../../ViewM/FlightVM/upsell_view_model.dart';
 import '../../../../constants.dart';
 import 'FlightReviewScreen/flight_review_screen.dart';
 
@@ -28,6 +30,8 @@ class ResponsiveFareOptionsSection extends StatefulWidget {
   final String? traceId;
   final String resultIndex;
   final int? adultCount;
+  final int? childrenCount;
+  final int? infantCount;
   const ResponsiveFareOptionsSection({
     super.key,
     required this.screenWidth,
@@ -48,6 +52,8 @@ class ResponsiveFareOptionsSection extends StatefulWidget {
     required this.duration,
     this.traceId,
     required this.resultIndex, this.adultCount,
+    this.childrenCount,
+    this.infantCount
   });
 
   @override
@@ -58,16 +64,144 @@ class ResponsiveFareOptionsSection extends StatefulWidget {
 class _ResponsiveFareOptionsSectionState
     extends State<ResponsiveFareOptionsSection> {
   int selectedIndex = 0;
-  late List<FlightResult> flights;
 
   @override
   void initState() {
     super.initState();
-    flights = widget.flightSearchResponse.results.expand((e) => e).toList();
+    Future.microtask(() {
+      final upsellVM = Provider.of<UpsellViewModel>(context, listen: false);
+      final body = {
+        "TraceId": widget.traceId,
+        "ResultIndex": widget.resultIndex,
+      };
+      upsellVM.fetchUpsellDetails(body);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final upsellVM = Provider.of<UpsellViewModel>(context);
+
+
+    // Add this guard to wait for loading
+    if (upsellVM.isLoading) {
+      return Padding(
+        padding: EdgeInsets.all(widget.screenWidth * 0.03),
+        child: Column(
+          children: List.generate(3, (index) {
+            return Container(
+              margin: EdgeInsets.only(bottom: widget.screenWidth * 0.03),
+              padding: EdgeInsets.all(widget.screenWidth * 0.03),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Shimmer.fromColors(
+                baseColor: Colors.grey.shade300,
+                highlightColor: Colors.grey.shade100,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Radio Placeholder
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: widget.screenWidth * 0.02),
+
+                    // Text and rows
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 16,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          SizedBox(
+                            width: 150,
+                            height: 12,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          SizedBox(
+                            width: 100,
+                            height: 12,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(width: widget.screenWidth * 0.02),
+
+                    // Fare + Button placeholder
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: 60,
+                          height: 16,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        SizedBox(
+                          width: 80,
+                          height: 30,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    }
+
+    // Optional: show error message if API failed
+    // if (upsellVM.errorMessage != null) {
+    //   return Center(child: Text(upsellVM.errorMessage!));
+    // }
+
+    // Guard for null or empty results
+    final resultList = upsellVM.upsellModel?.data?.results;
+    if (resultList == null || resultList.isEmpty) {
+      return const SizedBox.shrink(); // Show nothing
+    }
     return Container(
       padding: EdgeInsets.all(widget.screenWidth * 0.03),
       decoration: BoxDecoration(
@@ -76,8 +210,12 @@ class _ResponsiveFareOptionsSectionState
         ),
       ),
       child: Column(
-        children: List.generate(1, (index) {
-          final flight = flights[index];
+        children: List.generate(resultList?.length ?? 0, (index) {
+          final result = resultList![index];
+          final segmentList = result.segments;
+          final firstSegment = segmentList != null && segmentList.isNotEmpty ? segmentList[0][0] : null;
+
+          if (firstSegment == null) return const SizedBox();
 
           return Container(
             margin: EdgeInsets.only(bottom: widget.screenWidth * 0.03),
@@ -86,10 +224,7 @@ class _ResponsiveFareOptionsSectionState
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color:
-                    selectedIndex == index
-                        ? constants.themeColor2
-                        : Colors.grey.shade300,
+                color: selectedIndex == index ? constants.themeColor2 : Colors.grey.shade300,
                 width: selectedIndex == index ? 1.8 : 1,
               ),
             ),
@@ -108,7 +243,7 @@ class _ResponsiveFareOptionsSectionState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.supplierFareClass ?? 'Standard Fare',
+                        firstSegment.supplierFareClass?.toString() ?? 'Standard Fare',
                         style: TextStyle(
                           fontSize: widget.screenWidth * 0.04,
                           fontWeight: FontWeight.bold,
@@ -118,22 +253,14 @@ class _ResponsiveFareOptionsSectionState
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (widget.cabinBaggage != null)
-                            _buildFeatureRow(
-                              Icons.work_outline,
-                              'Cabin Bag: ${widget.cabinBaggage}',
-                            ),
-                          if (widget.baggage != null)
-                            _buildFeatureRow(
-                              Icons.luggage,
-                              'Check In: ${widget.baggage}',
-                            ),
-                          // if (flight.cancellationPolicy != null)
-                          //   _buildFeatureRow(Icons.cancel_outlined,
-                          //       'Cancellation: ${flight.cancellationPolicy}'),
-                          // if (flight.dateChangePolicy != null)
-                          //   _buildFeatureRow(Icons.date_range,
-                          //       'Date Change: ${flight.dateChangePolicy}'),
+                          _buildFeatureRow(
+                            Icons.work_outline,
+                            'Cabin Bag: ${firstSegment.cabinBaggage ?? '-'}',
+                          ),
+                          _buildFeatureRow(
+                            Icons.luggage,
+                            'Check In: ${firstSegment.baggage ?? '-'}',
+                          ),
                         ],
                       ),
                     ],
@@ -152,7 +279,7 @@ class _ResponsiveFareOptionsSectionState
                     //     ),
                     //   ),
                     Text(
-                      '₹${widget.publishedFare}',
+                      '₹${result.fare?.publishedFare?.floor() ?? 0}',
                       style: TextStyle(
                         fontSize: widget.screenWidth * 0.045,
                         fontWeight: FontWeight.bold,
@@ -176,8 +303,8 @@ class _ResponsiveFareOptionsSectionState
 
                         // Prepare request
                         final request = FlightQuoteRequest(
-                          traceId: widget.traceId!,
-                          resultIndex: widget.resultIndex,
+                          traceId: upsellVM.upsellModel!.data!.traceId!,
+                          resultIndex: result.resultIndex!,
                         );
 
                         viewModel.fetchQuote(request).then((_) {
@@ -192,7 +319,7 @@ class _ResponsiveFareOptionsSectionState
 
                             final firstSegment = segments[0][0];
                             final lastSegment =
-                                hasLayover ? segments[0][1] : segments[0][0];
+                            hasLayover ? segments[0][1] : segments[0][0];
 
                             final fare = response.data?.results?.fare;
                             if (fare != null) {
@@ -237,17 +364,17 @@ class _ResponsiveFareOptionsSectionState
                             // Parse times for layover calculation
                             if (hasLayover) {
                               final layoverArrival =
-                                  firstSegment.destination!.arrTime!;
+                              firstSegment.destination!.arrTime!;
                               final layoverDeparture =
-                                  lastSegment.origin!.depTime!;
+                              lastSegment.origin!.depTime!;
 
                               final layoverCityName =
-                                  firstSegment.destination!.airport!.cityName!;
+                              firstSegment.destination!.airport!.cityName!;
                               final layoverCityAirportCode =
-                                  firstSegment
-                                      .destination!
-                                      .airport!
-                                      .airportCode!;
+                              firstSegment
+                                  .destination!
+                                  .airport!
+                                  .airportCode!;
 
                               final layoverMinutes =
                                   layoverDeparture
@@ -260,24 +387,24 @@ class _ResponsiveFareOptionsSectionState
                               layoverCity = layoverCityName;
                               layoverCityCode = layoverCityAirportCode;
                               layoverDuration =
-                                  "${layoverHours}h ${layoverRemainingMinutes}m layover in $layoverCity";
+                              "${layoverHours}h ${layoverRemainingMinutes}m layover in $layoverCity";
 
                               final originToLayoverMinutes =
-                                  firstSegment.duration!;
+                              firstSegment.duration!;
                               final layoverToDestination =
-                                  lastSegment.duration!;
+                              lastSegment.duration!;
                               final totalFlightHours =
                                   originToLayoverMinutes ~/ 60;
                               final totalFlightRemainingMinutes =
                                   originToLayoverMinutes % 60;
                               duration =
-                                  "${totalFlightHours}h ${totalFlightRemainingMinutes}m";
+                              "${totalFlightHours}h ${totalFlightRemainingMinutes}m";
                               final totalFlightHoursA =
                                   layoverToDestination ~/ 60;
                               final totalFlightRemMin =
                                   layoverToDestination % 60;
                               durationA =
-                                  "${totalFlightHoursA}h ${totalFlightRemMin}m";
+                              "${totalFlightHoursA}h ${totalFlightRemMin}m";
                             } else {
                               final totalFlightMinutes = firstSegment.duration!;
                               final hours = totalFlightMinutes ~/ 60;
@@ -291,85 +418,83 @@ class _ResponsiveFareOptionsSectionState
                               MaterialPageRoute(
                                 builder:
                                     (context) => FlightReviewScreen(
-                                      adultCount:widget.adultCount,
-                                      originCity:
-                                          firstSegment
-                                              .origin!
-                                              .airport!
-                                              .cityName!,
-                                      destinationCity:
-                                          lastSegment
-                                              .destination!
-                                              .airport!
-                                              .cityName!,
-                                      originAirportCode:
-                                          firstSegment
-                                              .origin!
-                                              .airport!
-                                              .airportCode!,
-                                      destinationAirportCode:
-                                          lastSegment
-                                              .destination!
-                                              .airport!
-                                              .airportCode!,
-                                      departure:
-                                          firstSegment.origin!.depTime!
-                                              .toString(),
-                                      arrival:
-                                          lastSegment.destination!.arrTime!
-                                              .toString(),
-                                      layoverArr:
-                                          firstSegment.destination!.arrTime!
-                                              .toString(),
-                                      layoverDep:
-                                          lastSegment.origin!.depTime!
-                                              .toString(),
-                                      duration: duration,
-                                      durationA: durationA,
-                                      originTerminalNo:
-                                          response
-                                              .data!
-                                              .results!
-                                              .segments![0][0]
-                                              .origin!
-                                              .airport!
-                                              .terminal!,
-                                      layoverTerminalNo:
-                                          firstSegment
-                                              .destination!
-                                              .airport!
-                                              .terminal!,
-                                      layoverTerminalNo2:
-                                          lastSegment
-                                              .origin!
-                                              .airport!
-                                              .terminal!,
-                                      destinationTerminalNo:
-                                          lastSegment
-                                              .destination!
-                                              .airport!
-                                              .terminal!,
-                                      publishedFare:
-                                          response
-                                              .data!
-                                              .results!
-                                              .fare!
-                                              .publishedFare!
-                                              .floor(),
-                                      supplierFareClass:
-                                          firstSegment.airline!.fareClass!,
-                                      supplierFareClass2:
-                                          lastSegment.airline!.fareClass!,
-                                      resultIndex:
-                                          response.data!.results!.resultIndex!,
-                                      traceId: response.data!.traceId,
-                                      layoverCity: layoverCity,
-                                      layoverCityCode: layoverCityCode,
-                                      layoverDuration: layoverDuration,
-                                      flightName: flightName,
-                                      flightName2: flightName2,
-                                      airlineName:firstSegment.airline!.airlineName!, fare:  response.data!.results!.fare!.toJson(), isLcc: response.data!.results!.isLcc!,
-                                    ),
+                                  adultCount:widget.adultCount,
+                                  originCity:
+                                  firstSegment
+                                      .origin!
+                                      .airport!
+                                      .cityName!,
+                                  destinationCity:
+                                  lastSegment
+                                      .destination!
+                                      .airport!
+                                      .cityName!,
+                                  originAirportCode:
+                                  firstSegment
+                                      .origin!
+                                      .airport!
+                                      .airportCode!,
+                                  destinationAirportCode:
+                                  lastSegment
+                                      .destination!
+                                      .airport!
+                                      .airportCode!,
+                                  departure:
+                                  firstSegment.origin!.depTime!
+                                      .toString(),
+                                  arrival:
+                                  lastSegment.destination!.arrTime!
+                                      .toString(),
+                                  layoverArr:
+                                  firstSegment.destination!.arrTime!
+                                      .toString(),
+                                  layoverDep:
+                                  lastSegment.origin!.depTime!
+                                      .toString(),
+                                  duration: duration,
+                                  durationA: durationA,
+                                  originTerminalNo:
+                                  response
+                                      .data!
+                                      .results!
+                                      .segments![0][0]
+                                      .origin!
+                                      .airport!
+                                      .terminal!,
+                                  layoverTerminalNo:
+                                  firstSegment
+                                      .destination!
+                                      .airport!
+                                      .terminal!,
+                                  layoverTerminalNo2:
+                                  lastSegment
+                                      .origin!
+                                      .airport!
+                                      .terminal!,
+                                  destinationTerminalNo:
+                                  lastSegment
+                                      .destination!
+                                      .airport!
+                                      .terminal!,
+                                  publishedFare:
+                                  response.data!.results!.fare!.publishedFare!.floor(),
+                                  supplierFareClass:
+                                  firstSegment.airline!.fareClass!,
+                                  supplierFareClass2:
+                                  lastSegment.airline!.fareClass!,
+                                  resultIndex:
+                                  response.data!.results!.resultIndex!,
+                                  traceId: response.data!.traceId,
+                                  layoverCity: layoverCity,
+                                  layoverCityCode: layoverCityCode,
+                                  layoverDuration: layoverDuration,
+                                  flightName: flightName,
+                                  flightName2: flightName2,
+                                  airlineName:firstSegment.airline!.airlineName!,
+                                  fare:  response.data!.results!.fare!.toJson(), isLcc: response.data!.results!.isLcc!,
+                                  childrenCount: widget.childrenCount,
+                                  infantCount: widget.infantCount,
+                                ),
                               ),
                             );
                           }

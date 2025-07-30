@@ -3,7 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:trip_go/constants.dart';
 
 class DOBCalendarPage extends StatefulWidget {
-  const DOBCalendarPage({Key? key}) : super(key: key);
+  const DOBCalendarPage({super.key});
 
   @override
   State<DOBCalendarPage> createState() => _DOBCalendarPageState();
@@ -28,6 +28,7 @@ class _DOBCalendarPageState extends State<DOBCalendarPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text(
           'Select Date of Birth',
@@ -104,6 +105,7 @@ class _DOBCalendarPageState extends State<DOBCalendarPage> {
               child: const Text('Confirm DOB', style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ),
+          SizedBox(height: 40,)
         ],
       ),
     );
@@ -113,7 +115,7 @@ class _DOBCalendarPageState extends State<DOBCalendarPage> {
 class SelectYearPage extends StatelessWidget {
   final int initialYear;
 
-  SelectYearPage({Key? key, required this.initialYear}) : super(key: key);
+  const SelectYearPage({super.key, required this.initialYear});
 
   @override
   Widget build(BuildContext context) {

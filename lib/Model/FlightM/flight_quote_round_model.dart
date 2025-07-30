@@ -2,12 +2,12 @@ import 'dart:convert';
 class FlightQuoteRoundRequest {
   final String traceId;
   final String resultIndex;
-  final String resultIndexIB;
+  final String? resultIndexIB;
 
   FlightQuoteRoundRequest({
     required this.traceId,
     required this.resultIndex,
-    required this.resultIndexIB,
+    this.resultIndexIB,
   });
 
   Map<String, dynamic> toJson() {
@@ -32,7 +32,6 @@ class FlightQuoteRoundModel {
   final bool? success;
   final String? message;
   final Data? data;
-
 
   FlightQuoteRoundModel({
     this.success,

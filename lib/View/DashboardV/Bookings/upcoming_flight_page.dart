@@ -42,6 +42,8 @@ class UpcomingFlightsPage extends StatelessWidget {
     },
   ];
 
+   UpcomingFlightsPage({super.key});
+
   String? _getAirlineLogo(String airlineName) {
     final match = airlines.firstWhere(
           (airline) => airline['name']!.toLowerCase() == airlineName.toLowerCase(),

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:trip_go/Model/FlightM/flight_booking_details_round_model.dart';
-
+import '../../../Api/api_service/api_constant.dart'; // Adjust path as needed
 
 class FlightBookingDetailsRoundService {
-  static const String _url = 'https://admin.travelsdata.com/api/flight-booking-details';
+  static const String _endpoint = 'api/flight-booking-details';
 
   Future<FlightBookingDetailsRoundModel?> fetchFlightBookingDetails({
     required String traceId,
@@ -13,36 +13,38 @@ class FlightBookingDetailsRoundService {
     required String pnrIb,
     required int bookingIdIb,
   }) async {
-    try {
-      final requestBody = {
-        "TraceId": traceId,
-        "PNR": pnr,
-        "BookingId": bookingId,
-        "PNRIB": pnrIb,
-        "BookingIdIB": bookingIdIb
-      };
+    final String fullUrl = ApiConstant.baseUrl + _endpoint;
 
-      print('🔵 [API POST] $_url');
+    final requestBody = {
+      "TraceId": traceId,
+      "PNR": pnr,
+      "BookingId": bookingId,
+      "PNRIB": pnrIb,
+      "BookingIdIB": bookingIdIb
+    };
+
+    try {
+      print('🔵 [POST] $fullUrl');
       print('📝 [Request Body] ${jsonEncode(requestBody)}');
 
       final response = await http.post(
-        Uri.parse(_url),
+        Uri.parse(fullUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
 
-      print('📦 [Response Status] ${response.statusCode}');
+      print('📦 [Status Code] ${response.statusCode}');
       print('📨 [Response Body] ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return FlightBookingDetailsRoundModel.fromJson(data);
       } else {
-        print('❌ Error: ${response.statusCode}');
+        print('❌ [Error] Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❗ Exception: $e');
+      print('❗ [Exception] $e');
       return null;
     }
   }

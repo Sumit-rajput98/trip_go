@@ -1,19 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../Model/FlightM/flight_ticket_lcc_model.dart';
+import '../api_constant.dart'; // Import ApiConstant
 
 class FlightBookNonLccService {
-  final String _baseUrl = "https://admin.travelsdata.com/api/flight-book";
+  final String _endpoint = "api/flight-ticket";
 
   Future<FlightTicketResponse> bookFlight(FlightTicketRequest request) async {
+    final String url = "${ApiConstant.baseUrl}$_endpoint";
     final String rawBody = jsonEncode(request.toJson());
 
     // 🔍 Pretty-print raw JSON line-by-line
-    print("🔍 Raw Request Body:");
+    print("🔍 ..Raw Request Body for ticket:");
     _printFormattedJson(rawBody);
 
     final response = await http.post(
-      Uri.parse(_baseUrl),
+      Uri.parse(url),
       headers: {
         "Content-Type": "application/json",
       },

@@ -10,6 +10,7 @@ import '../common_widget/bottom_bar.dart';
 
 class FlightReviewScreen extends StatefulWidget {
   final Map<String, dynamic> fare;
+  final bool? isInternational;
   final String flightName;
   final String flightName2;
   final bool isLcc;
@@ -37,8 +38,12 @@ class FlightReviewScreen extends StatefulWidget {
   final String? layoverTerminalNo2;
   final String airlineName;
   final int? adultCount;
+  final int? childrenCount;
+  final int? infantCount;
+
   const FlightReviewScreen({
     super.key,
+    this.isInternational,
     required this.fare,
     required this.originCity,
     required this.isLcc,
@@ -67,6 +72,8 @@ class FlightReviewScreen extends StatefulWidget {
     required this.supplierFareClass2,
     required this.airlineName,
     this.adultCount,
+    this.childrenCount,
+    this.infantCount,
   });
 
   @override
@@ -78,10 +85,11 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
   void initState() {
     super.initState();
     print("@@ - ${widget.traceId}");
-    print("isLLC - ${widget.isLcc}");
+    print("isLLC - ${widget.isLcc}, child - ${widget.childrenCount}, infant - ${widget.infantCount}");
   }
   @override
   Widget build(BuildContext context) {
+    print("isInternational : ${widget.isInternational}");
     String formatFullDateTime(String timeStr) {
       try {
         final dateTime = DateTime.parse(timeStr);
@@ -256,12 +264,22 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
           MaterialPageRoute(
             builder:
                 (context) => TravellerDetails(
-                  resultIndex: widget.resultIndex,
-                  traceId: widget.traceId!,
-                  adultCount: widget.adultCount,
-                  price:widget.publishedFare, fare: widget.fare,
-                  isLcc: widget.isLcc,
-                ),
+              isInternational: widget.isInternational,
+              originCity: widget.originCity,
+              destinationCity: widget.destinationCity,
+              departureTime:widget.departure,
+              arrivalTime: widget.arrival,
+              airlineName: widget.airlineName,
+              duration:widget.duration ,
+              resultIndex: widget.resultIndex,
+              traceId: widget.traceId!,
+              adultCount: widget.adultCount,
+              childrenCount: widget.childrenCount,
+              infantCount: widget.infantCount,
+              price:widget.publishedFare, fare: widget.fare,
+              isLcc: widget.isLcc,
+              flightName: widget.flightName,
+            ),
           ),
         );
       },price: widget.publishedFare),
@@ -270,23 +288,23 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
 
   // Widget buildFlightReviewCard() {
   Widget buildFlightTile(
-    String flight,
-    String fare,
-    String fromCode,
-    String depTime,
-    String toCode,
-    String arrTime,
-    String depTerminal,
-    String arrTerminal,
-    String duration,
-    String depCity,
-    String arrCity,
-  ) {
+      String flight,
+      String fare,
+      String fromCode,
+      String depTime,
+      String toCode,
+      String arrTime,
+      String depTerminal,
+      String arrTerminal,
+      String duration,
+      String depCity,
+      String arrCity,
+      ) {
     final List<Map<String, String>> airlines = [
       {
         "name": "Air India",
         "logo":
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-QO8gVe353NPaAV3wid57LAtWqIdet-EVMA&s",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-QO8gVe353NPaAV3wid57LAtWqIdet-EVMA&s",
       },
       {
         "name": "Air India Express",
@@ -312,8 +330,8 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
 
     String getAirlineLogo(String airlineName) {
       final airline = airlines.firstWhere(
-        (airline) =>
-            airline['name']!.toLowerCase() == airlineName.toLowerCase(),
+            (airline) =>
+        airline['name']!.toLowerCase() == airlineName.toLowerCase(),
         orElse:
             () => {"logo": "https://via.placeholder.com/50"}, // fallback image
       );
@@ -342,20 +360,36 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
               backgroundImage: NetworkImage(getAirlineLogo(widget.airlineName)),
             ),
             const SizedBox(width: 6),
-            Text(
-              flight,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
+
+            /// Wrap `Text` in `Flexible` so it doesn't overflow
+            Flexible(
               child: Text(
-                "Refundable",
-                style: GoogleFonts.poppins(color: Colors.green),
+                flight,
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+
+            const Spacer(),
+
+            /// Wrap Container in Flexible if space is still tight (optional)
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Refundable",
+                  style: GoogleFonts.poppins(
+                    color: Colors.green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -445,12 +479,12 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
   }
 
   Widget buildFlightTimeArrival(
-    String code,
-    String time,
-    String city,
-    String terminal,
-    String departureDate,
-  ) {
+      String code,
+      String time,
+      String city,
+      String terminal,
+      String departureDate,
+      ) {
     return Column(
       children: [
         Text(
@@ -468,12 +502,12 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
   }
 
   Widget buildFlightTimeDeparture(
-    String code,
-    String time,
-    String city,
-    String terminal,
-    String arrivalDate,
-  ) {
+      String code,
+      String time,
+      String city,
+      String terminal,
+      String arrivalDate,
+      ) {
     return Column(
       children: [
         Text(
@@ -509,6 +543,8 @@ class _FlightReviewScreenState extends State<FlightReviewScreen> {
 }
 
 class TravelInsuranceAndPromo extends StatelessWidget {
+  const TravelInsuranceAndPromo({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Column(

@@ -7,14 +7,14 @@ class AddGmail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    RegExp email_valid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+    final formKey = GlobalKey<FormState>();
+    RegExp emailValid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
     return Dialog(
       child: Container(
         height: 260,
         decoration: BoxDecoration(color: Colors.white),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             children: [
               Container(
@@ -59,7 +59,7 @@ class AddGmail extends StatelessWidget {
                     validator: (value){
                       if(value!.isEmpty){
                         return "Enter your Email";
-                      }else if (!email_valid.hasMatch(value)){
+                      }else if (!emailValid.hasMatch(value)){
                         return "Email should contain some condition";
                       }
                       return null;
@@ -70,7 +70,7 @@ class AddGmail extends StatelessWidget {
               SizedBox(height: 20),
               InkWell(
                 onTap: () {
-                  if (_formKey.currentState!.validate()) {
+                  if (formKey.currentState!.validate()) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => ProfilePage()),

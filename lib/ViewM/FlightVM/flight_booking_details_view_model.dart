@@ -25,7 +25,7 @@ class FlightBookingDetailsViewModel extends ChangeNotifier {
         bookingId: bookingId,
       );
 
-      if (result != null && result.success) {
+      if (result != null && result.success!) {
         bookingDetails = result;
       } else {
         errorMessage = result?.message ?? 'Unknown error';

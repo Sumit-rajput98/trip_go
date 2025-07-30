@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/TourScreen/trending_destinations.dart';
+import 'TourWidget/enquire_button.dart';
 import 'TourWidget/top_tour_page_widget.dart';
 
 class TourPage extends StatefulWidget {
@@ -11,10 +12,10 @@ class TourPage extends StatefulWidget {
 
 class _TourPageState extends State<TourPage> {
   List imgList = [
-    "https://images.pexels.com/photos/2178175/pexels-photo-2178175.jpeg?auto=compress&cs=tinysrgb&w=600",
-    "https://images.pexels.com/photos/2082103/pexels-photo-2082103.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    "https://images.pexels.com/photos/2161449/pexels-photo-2161449.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    "https://images.pexels.com/photos/2161449/pexels-photo-2161449.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    "https://www.tripgoonline.com/Images/tour/australia-banner-home.webp",
+    "https://www.tripgoonline.com/Images/tour/kerala_newbb.png",
+    "https://www.tripgoonline.com/Images/tour/kashmir-banner-home.webp",
+    "https://www.tripgoonline.com/Images/tour/dubai_newbb.png",
   ];
   @override
   void initState() {
@@ -27,7 +28,6 @@ class _TourPageState extends State<TourPage> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -37,11 +37,12 @@ class _TourPageState extends State<TourPage> {
         child: Column(
           children: [
             TopTourPageWidget(size: size, imgList: imgList),
-            TrendingDestinations()
+            TrendingDestinations(),
+            SizedBox(height: 20,),
           ],
         ),
       ),
-
+      floatingActionButton: AnimatedEnquireButton(),
     );
   }
 }

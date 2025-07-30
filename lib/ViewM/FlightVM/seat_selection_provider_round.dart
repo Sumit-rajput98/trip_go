@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../Model/FlightM/flight_SSR_model_lcc.dart'; // Replace with the file where Seat is defined
+
+import '../../Model/FlightM/flight_SSR_round_model.dart';
+
 class SeatSelectionProviderRound extends ChangeNotifier {
-  List<Seat> _selectedSeats = [];
+  final List<Seat> _selectedSeats = [];
   double _totalPrice = 0.0;
   final Map<String, Seat> _onwardSeats = {};
   final Map<String, Seat> _returnSeats = {};

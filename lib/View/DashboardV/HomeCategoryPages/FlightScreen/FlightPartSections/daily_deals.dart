@@ -1,9 +1,59 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:trip_go/View/DashboardV/HomeCategoryPages/ticket_view.dart';
+import 'dart:async';
 
-class DailyDeals extends StatelessWidget {
+import 'package:flutter/material.dart';
+
+class DailyDeals extends StatefulWidget {
   const DailyDeals({super.key});
+
+  @override
+  State<DailyDeals> createState() => _DailyDealsState();
+}
+
+class _DailyDealsState extends State<DailyDeals> {
+
+  late Timer _timer;
+  Duration _remainingTime = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    final now = DateTime.now();
+    final targetTime = DateTime(now.year, now.month, now.day, 12, 30, 0);
+
+    if (now.isBefore(targetTime)) {
+      _remainingTime = targetTime.difference(now);
+    } else {
+      _remainingTime = Duration.zero; // Timer already passed
+    }
+
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (_remainingTime.inSeconds > 0) {
+        setState(() {
+          _remainingTime -= Duration(seconds: 1);
+        });
+      } else {
+        _timer.cancel();
+      }
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours : $minutes : $seconds';
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   final List<Map<String, String>> airlines = const [
     {
@@ -38,7 +88,7 @@ class DailyDeals extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFFFEBEE), Color(0xFFFFF5F6), Colors.white],
+          colors: [Color(0xFFF4F5F9), Color(0xFFF0F2F8), Colors.white],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -94,7 +144,7 @@ class DailyDeals extends StatelessWidget {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
-                    children: const [
+                    children: [
                       Text(
                         'Closed At',
                         style: TextStyle(
@@ -106,7 +156,7 @@ class DailyDeals extends StatelessWidget {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '02 : 15 : 43',
+                        _formatDuration(_remainingTime),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,

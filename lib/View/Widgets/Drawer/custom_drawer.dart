@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trip_go/View/Widgets/Drawer/trip_go_offer_card.dart';
+import 'package:provider/provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/auth_provider.dart';
 import 'package:trip_go/View/Widgets/country_selection_page.dart';
 
 import 'drawer_header.dart';
@@ -18,6 +18,7 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
+  
   String selectedCountry = 'India';
   final List<Map<String, String>> countries = [
     {'name': 'India', 'flag': 'https://flagcdn.com/w40/in.png'},
@@ -31,175 +32,115 @@ class _CustomDrawerState extends State<CustomDrawer> {
     {'name': 'Australia', 'flag': 'https://flagcdn.com/w40/au.png'},
     {'name': 'Italy', 'flag': 'https://flagcdn.com/w40/it.png'},
   ];
-  void showCountryPopup(BuildContext context,String selectedCountry,Function(String?) onCountryChanged) {
-    final overlay = Overlay.of(context);
-    OverlayEntry? entry;
 
-    entry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: kToolbarHeight + 10,
-        right: 0,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            width: 250,
-            height: 300,
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),  // padding adjustments
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Confirm Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.red),
             ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await Provider.of<AuthProvider>(context, listen: false).logout();
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Logged out successfully")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    return Drawer(
+      width: 380,
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero, // Remove the default padding
-                    itemCount: countries.length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        height: 36, // fixed height for uniformity and compactness
-                        child: InkWell(
-                          onTap: () {
-                            onCountryChanged(countries[index]['name']);
-                            entry?.remove();
-                          },
-                          child: Row(
-                            children: [
-                              SizedBox(width: 8),
-                              Image.network(
-                                countries[index]['flag'] ?? '',
-                                width: 24,
-                                height: 16,
-                                fit: BoxFit.cover,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                countries[index]['name'] ?? '',
-                                style: TextStyle(fontSize: 14, fontFamily: 'poppins'),
-                              ),
-                            ],
+                SizedBox(height: 30,),
+                const DrawerHeaderCloseButton(),
+                const DrawerUserInfo(),
+                const DrawerQuickAccess(),
+                const DrawerMainOptions(),
+                const SizedBox(height: 10),
+                const DrawerSocialLinks(),
+                const SizedBox(height: 10),
+
+                // Country/Region Selection
+                Card(
+                  elevation: 2,
+                  color: Colors.white,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CountrySelectionPage(
+                            selectedCountry: selectedCountry,
+                            onApply: (value) => setState(() => selectedCountry = value),
                           ),
                         ),
                       );
                     },
+                    child: ListTile(
+                      leading: Image.network(
+                        countries.firstWhere((c) => c['name'] == selectedCountry)['flag'] ?? '',
+                        width: 24,
+                        height: 16,
+                        fit: BoxFit.cover,
+                      ),
+                      title: Text("Country/Region", style: constants.fontStyle),
+                      subtitle: Text(selectedCountry, style: constants.titleStyle),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 20),
+                    ),
                   ),
                 ),
+
+                // Logout Button (only when logged in)
+                if (authProvider.isLoggedIn)
+                  Card(
+                    elevation: 2,
+                    color: Colors.white,
+                    child: InkWell(
+                      onTap: _logout,
+                      child: ListTile(
+                        leading: Icon(Icons.logout, size: 30, color: Colors.red[900]),
+                        title: Text("Log out", style: constants.singIn),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 20),
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 10),
               ],
             ),
           ),
         ),
       ),
     );
-
-    overlay.insert(entry);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      width: 380,
-      backgroundColor: Colors.white,
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 10,right: 10),
-          child: Column(
-            children: [
-              const DrawerHeaderCloseButton(),
-              const DrawerUserInfo(),
-              //const TripGoOfferCard(),
-              const DrawerQuickAccess(),
-              DrawerMainOptions(),
-              const SizedBox(height: 10),
-              DrawerSocialLinks(),
-              const SizedBox(height: 10),
-              Card(
-                elevation: 2,
-                color: Colors.white,
-                child:  Column(
-                  children: [
-                    InkWell(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context)=>CountrySelectionPage(selectedCountry: selectedCountry, onApply: (value) {
-                          if (value != null) {
-                            setState(() {
-                              selectedCountry = value;
-                            });
-                          }
-                        },)));
-                        /*showCountryPopup(context,selectedCountry,
-                           (value) {
-                            if (value != null) {
-                              setState(() {
-                                selectedCountry = value;
-                              });
-                            }
-                          },);*/
-                      },
-                      child: ListTile(
-                        leading: Image.network(
-                          countries.firstWhere((c) => c['name'] == selectedCountry)['flag'] ?? '',
-                          width: 24,
-                          height: 16,
-                          fit: BoxFit.cover,
-                        ),
-                        title: Text("Country/Region",style: constants.fontStyle,),
-                        subtitle: Text(selectedCountry,style: constants.titleStyle,),
-                        trailing: Icon(Icons.arrow_forward_ios,size: 20,),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                elevation: 2,
-                color: Colors.white,
-                child:  Column(
-                  children: [
-                    InkWell(
-                      onTap: (){},
-                      child: ListTile(
-                        leading: Icon(Icons.logout,size: 30,color: Colors.red[900],),
-                        title: Text("Sign out ",style: constants.singIn,),
-                        trailing: Icon(Icons.arrow_forward_ios,size: 20,),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 10,),
-            ],
-          ),
-        ),
-      ),
-
-
-    );
   }
 }
-
-class listTileWidget extends StatelessWidget {
-  final String title;
-  final String img;
-  const listTileWidget({
-    super.key,
-    required this.title, required this.img
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Image.network(img,height: 30,),
-      title: Text(title,style: constants.titleStyle,),
-      trailing: Icon(Icons.arrow_forward_ios,size: 20,),
-    );
-  }
-}
-
-
-
 class constants{
 static var primaryColor = const Color(0xff296e48);
 
@@ -250,4 +191,23 @@ static var primaryColor = const Color(0xff296e48);
   static var subtitle= "Share your feedback";
   static Color themeColor1= Color(0xff1B499F);
   static Color themeColor2= Color(0xffF73130);
+}
+class listTileWidget extends StatelessWidget {
+  final String title;
+  final String img;
+  final double? size;
+  const listTileWidget({
+    super.key,
+    required this.title, required this.img,
+    this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Image.network(img,height: size,),
+      title: Text(title,style: constants.titleStyle,),
+      trailing: Icon(Icons.arrow_forward_ios,size: 20,),
+    );
+  }
 }

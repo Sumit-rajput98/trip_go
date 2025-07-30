@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trip_go/AppManager/Api/api_service/FlightSearchService/flight_quote_service.dart';
-import 'package:trip_go/Model/FlightM/flight_quote_model.dart';
 
 import '../../AppManager/Api/api_service/FlightSearchService/flight_quote_round_service.dart';
 import '../../Model/FlightM/flight_quote_round_model.dart';
@@ -18,12 +16,15 @@ class FlightQuoteRoundViewModel extends ChangeNotifier{
       print("Error fetching flight search results: $e");
     }
   }
-  Future<void> fetchQuoteRoundRT(FlightQuoteRoundRequest request1) async {
+  Future<void> fetchQuoteRoundRT(FlightQuoteRoundRequest request) async {
     try {
-      _flightQuoteRoundRes1 = await FlightQuoteRoundService().fetchQuote(request1);
+      print("📤 Sending round trip quote request...");
+      _flightQuoteRoundRes1 = await FlightQuoteRoundService().fetchQuote(request);
+      print("✅ Response received");
       notifyListeners();
     } catch (e) {
-      print("Error fetching flight search results: $e");
+      print("❌ Error fetching flight search results: $e");
+      rethrow; // This lets the UI show or handle the error
     }
   }
 }

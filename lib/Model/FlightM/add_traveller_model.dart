@@ -1,9 +1,10 @@
 class Traveller {
-  String? title;       // Mr, Mrs, Ms, etc.
+  String? title;
   String firstName;
   String lastName;
   String? email;
-  String? dateOfBirth; // in yyyy-MM-dd format
+  String? dateOfBirth;
+  int paxType; // ✅ Make it nullable
   bool isSelected;
 
   Traveller({
@@ -12,9 +13,9 @@ class Traveller {
     required this.lastName,
     this.email,
     this.dateOfBirth,
+    required this.paxType,
     this.isSelected = false,
   });
 
-  // Optional: Helper to get full name
   String get name => '$title $firstName $lastName'.trim();
 }

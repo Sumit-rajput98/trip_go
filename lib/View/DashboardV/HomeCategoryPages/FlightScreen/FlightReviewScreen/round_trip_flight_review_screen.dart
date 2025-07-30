@@ -14,7 +14,10 @@ import '../common_widget/bottom_bar.dart';
 class RoundTripFlightReviewScreen extends StatefulWidget {
   final Map<String, dynamic> fare;
   final Map<String, dynamic> fare2;
+  final bool isLccIb;
   final int adultCount;
+  final int? childrenCount;
+  final int? infantsCount;
   final String flightName;
   final String flightName2;
   final bool isLcc;
@@ -70,8 +73,12 @@ class RoundTripFlightReviewScreen extends StatefulWidget {
   final String? returnTraceId;
   final String returnAirlineName;
   final int? price;
+
   const RoundTripFlightReviewScreen({ super.key,
     required this.adultCount,
+    this.childrenCount,
+    this.infantsCount,
+    required this.isLccIb,
     required this.isLcc,
     required this.fare,
     required this.fare2,
@@ -124,6 +131,13 @@ class RoundTripFlightReviewScreen extends StatefulWidget {
 }
 
 class _RoundTripFlightReviewScreenState extends State<RoundTripFlightReviewScreen> {
+  @override
+  void initState() {
+    super.initState();
+    print(widget.selectedOnwardResultIndex);
+    print(widget.selectedReturnResultIndex);
+  }
+
   String formatFullDateTime(String timeStr) {
     try {
       final dateTime = DateTime.parse(timeStr);
@@ -295,17 +309,40 @@ class _RoundTripFlightReviewScreenState extends State<RoundTripFlightReviewScree
       bottomNavigationBar: buildBottomBar(context,(){
         Navigator.push(context, MaterialPageRoute(builder: (context)=>
        RoundTripTravellersDetails(
-          resultIndex:widget.resultIndex,
-          traceId:widget.traceId!,
-          returnResultIndex:widget.returnResultIndex,
-          returnTraceId:widget.returnTraceId!,
-          price:widget.price,
-          fare : widget.fare,
-          fare2: widget.fare2,
-          isLcc: widget.isLcc,
-          selectedOnwardResultIndex: widget.selectedOnwardResultIndex,
-          selectedReturnResultIndex: widget.selectedReturnResultIndex, adultCount: widget.adultCount,
-       )));
+       childrenCount: widget.childrenCount,
+       infantsCount: widget.infantsCount,
+  returnOriginCity: widget.returnOriginCity,
+  returnDestinationCity: widget.returnDestinationCity,
+  currentCity: widget.originCity,
+  destinationCity: widget.destinationCity,
+
+  flightName: widget.flightName,
+  flightNumber: widget.supplierFareClass, // assuming this is flight number
+  returnFlightName: widget.returnFlightName,
+  returnFlightNumber: widget.returnSupplierFareClass, // assuming this is return flight number
+
+  departure: widget.departure,
+  arrival: widget.arrival,
+  duration: widget.duration,
+
+  returnDeparture: widget.returnDeparture,
+  returnArrival: widget.returnArrival,
+  returnDuration: widget.returnDuration,
+
+  resultIndex: widget.resultIndex,
+  traceId: widget.traceId!,
+  returnResultIndex: widget.returnResultIndex,
+  returnTraceId: widget.returnTraceId!,
+  price: widget.price,
+  fare: widget.fare,
+  fare2: widget.fare2,
+  isLcc: widget.isLcc,
+  selectedOnwardResultIndex: widget.selectedOnwardResultIndex,
+  selectedReturnResultIndex: widget.selectedReturnResultIndex,
+  adultCount: widget.adultCount,
+  isLccIb: widget.isLccIb,
+)
+));
       },price: widget.price),
     );
   }
@@ -812,6 +849,8 @@ Widget buildFlightReviewDepartCard(){
 
 
 class TravelInsuranceAndPromo extends StatelessWidget {
+  const TravelInsuranceAndPromo({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -868,7 +907,6 @@ class TravelInsuranceAndPromo extends StatelessWidget {
       ),
     );
   }
-
 
 
   Widget buildEaseMyTripReasons() {

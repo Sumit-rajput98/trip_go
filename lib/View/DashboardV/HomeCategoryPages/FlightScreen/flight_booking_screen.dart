@@ -9,6 +9,7 @@ import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/select_or
 import '../../../../Model/FlightM/flight_search_model.dart';
 import '../../../../ViewM/FlightVM/flight_search_view_model.dart';
 import '../../../../ViewM/FlightVM/round_trip_flight_search_view_model.dart';
+import '../../../../constants.dart';
 import '../../../Widgets/gradient_button.dart';
 import 'FlightPartSections/benefit_section_widget.dart';
 import 'FlightPartSections/daily_deals.dart';
@@ -81,9 +82,9 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
       );
 
       final formattedDepartureDate =
-          departureDate?.toLocal().toString().split(' ')[0];
+      departureDate?.toLocal().toString().split(' ')[0];
       final formattedReturnDate =
-          returnDate?.toLocal().toString().split(' ')[0];
+      returnDate?.toLocal().toString().split(' ')[0];
 
       final cabinClassMap = {
         "All": 1,
@@ -128,11 +129,11 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
           MaterialPageRoute(
             builder:
                 (_) => FlightLoadingScreen(
-                  fromCity: fromCity['city']!,
-                  toCity: toCity['city']!,
-                  departureDate: departureDate!,
-                  adultCount: adultsCount,
-                ),
+              fromCity: fromCity['city']!,
+              toCity: toCity['city']!,
+              departureDate: departureDate!,
+              adultCount: adultsCount,
+            ),
           ),
         );
 
@@ -150,8 +151,8 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
             print('Results:');
 
             // Print FlightResult and Segment details line by line
-            flightSearchResponse.results.forEach((resultList) {
-              resultList.forEach((result) {
+            for (var resultList in flightSearchResponse.results) {
+              for (var result in resultList) {
                 print('Result Index: ${result.resultIndex}');
                 print('Is Refundable: ${result.isRefundable}');
                 print('Airline Remark: ${result.airlineRemark}');
@@ -160,8 +161,8 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                 );
                 print('Segments:');
 
-                result.segments.forEach((segList) {
-                  segList.forEach((segment) {
+                for (var segList in result.segments) {
+                  for (var segment in segList) {
                     print('  Segment:');
                     print('    Baggage: ${segment.baggage}');
                     print('    Cabin Baggage: ${segment.cabinBaggage}');
@@ -171,21 +172,23 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                     print('    Flight Number: ${segment.airline.flightNumber}');
                     print('    Departure Time: ${segment.departureTime}');
                     print('    Arrival Time: ${segment.arrivalTime}');
-                  });
-                });
-              });
-            });
+                  }
+                }
+              }
+            }
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder:
                     (_) => FlightListScreen(
-                      adultCount: adultsCount,
-                      flightSearchResponse: viewModel.flightSearchResponse!,
-                      departureDate: departureDate!,
-                      fromCity: fromCity['city']!,
-                      toCity: toCity['city']!,
-                    ),
+                  adultCount: adultsCount,
+                  childrenCount: childrenCount,
+                  infantsCount : infantsCount,
+                  flightSearchResponse: viewModel.flightSearchResponse!,
+                  departureDate: departureDate!,
+                  fromCity: fromCity['city']!,
+                  toCity: toCity['city']!,
+                ),
               ),
             );
           }
@@ -197,41 +200,43 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
         });
       } else if (tripTypeIndex == 1) {
         if(returnDate!=null){
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => FlightLoadingScreen(
-                  fromCity: fromCity['city']!,
-                  toCity: toCity['city']!,
-                  departureDate: departureDate!,
-                  adultCount: adultsCount,
-                ),
-          ),
-        );
-        final rViewModel = Provider.of<RoundTripFlightSearchViewModel>(
-          context,
-          listen: false,
-        );
-        rViewModel.searchFlights(request2).then((_) {
-          Navigator.pop(context);
-
-          if (rViewModel.flightSearchResponse != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => RoundTripListScreen(
-                      flightSearchResponse: rViewModel.flightSearchResponse!,
-                      departureDate: departureDate!,
-                      fromCity: fromCity['code']!,
-                      toCity: toCity['code']!,
-                      adultCount: adultsCount,
-                    ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => FlightLoadingScreen(
+                fromCity: fromCity['city']!,
+                toCity: toCity['city']!,
+                departureDate: departureDate!,
+                adultCount: adultsCount,
               ),
-            );
-          }
-        });}
+            ),
+          );
+          final rViewModel = Provider.of<RoundTripFlightSearchViewModel>(
+            context,
+            listen: false,
+          );
+          rViewModel.searchFlights(request2).then((_) {
+            Navigator.pop(context);
+
+            if (rViewModel.flightSearchResponse != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => RoundTripListScreen(
+                    flightSearchResponse: rViewModel.flightSearchResponse!,
+                    departureDate: departureDate!,
+                    fromCity: fromCity['code']!,
+                    toCity: toCity['code']!,
+                        adultCount: adultsCount,
+                        childrenCount: childrenCount,
+                        infantsCount : infantsCount,
+                  ),
+                ),
+              );
+            }
+          });}
         else{
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -259,21 +264,21 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
       context: context,
       builder:
           (context) => SizedBox(
-            height: MediaQuery.of(context).size.height * 0.60,
-            child: TravellerBottomSheet(
-              initialAdultsCount: adultsCount,
-              initialChildrenCount: childrenCount,
-              initialInfantsCount: infantsCount,
-              onDone: (adults, children, infants) {
-                setState(() {
-                  adultsCount = adults;
-                  childrenCount = children;
-                  infantsCount = infants;
-                  travellerCount = adults + children + infants;
-                });
-              },
-            ),
-          ),
+        height: MediaQuery.of(context).size.height * 0.60,
+        child: TravellerBottomSheet(
+          initialAdultsCount: adultsCount,
+          initialChildrenCount: childrenCount,
+          initialInfantsCount: infantsCount,
+          onDone: (adults, children, infants) {
+            setState(() {
+              adultsCount = adults;
+              childrenCount = children;
+              infantsCount = infants;
+              travellerCount = adults + children + infants;
+            });
+          },
+        ),
+      ),
     );
   }
 
@@ -286,13 +291,13 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
       ),
       builder:
           (context) => ClassSelectionBottomSheet(
-            initialClass: selectedClass,
-            onClassSelected: (classSelected) {
-              setState(() {
-                selectedClass = classSelected;
-              });
-            },
-          ),
+        initialClass: selectedClass,
+        onClassSelected: (classSelected) {
+          setState(() {
+            selectedClass = classSelected;
+          });
+        },
+      ),
     );
   }
 
@@ -333,7 +338,8 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                     end: Alignment.topCenter,
                     // colors: [Color(0xFFFFCDD2), Color(0xFFBBDEFB)],
                     // #F5F1F5
-                    colors: [Color(0xFFFFEBEE), Color(0xFFFFF5F6)],
+                    // colors: [Color(0xFFFFEBEE), Color(0xFFFFF5F6)],
+                    colors: [Color(0xFFF4F5F9), Color(0xFFF0F2F8)],
                   ),
                 ),
                 child: Padding(
@@ -354,6 +360,7 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                         ),
                         padding: const EdgeInsets.all(4),
                         child: TripSelector(
+                          types: ['One Way', 'Round Trip', 'MultiCity'],
                           tripTypeIndex: tripTypeIndex,
                           onChanged:
                               (index) => setState(() => tripTypeIndex = index),
@@ -372,13 +379,13 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                   child: GestureDetector(
                                     onTap: () async {
                                       final selectedCity = await Navigator.push<
-                                        Map<String, String>
+                                          Map<String, String>
                                       >(
                                         context,
                                         MaterialPageRoute(
                                           builder:
                                               (context) =>
-                                                  SelectOriginCityScreen(),
+                                              SelectOriginCityScreen(),
                                         ),
                                       );
                                       if (selectedCity != null) {
@@ -389,8 +396,8 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                     },
                                     child: LocationBox(
                                       label: 'FROM',
-                                      code: fromCity?['code'] ?? 'DEL',
-                                      city: fromCity?['city'] ?? 'DELHI',
+                                      code: fromCity['code'] ?? 'DEL',
+                                      city: fromCity['city'] ?? 'DELHI',
                                     ),
                                   ),
                                 ),
@@ -399,13 +406,13 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                   child: GestureDetector(
                                     onTap: () async {
                                       final selectedCity = await Navigator.push<
-                                        Map<String, String>
+                                          Map<String, String>
                                       >(
                                         context,
                                         MaterialPageRoute(
                                           builder:
                                               (context) =>
-                                                  SelectDestinationCityScreen(),
+                                              SelectDestinationCityScreen(),
                                         ),
                                       );
                                       if (selectedCity != null) {
@@ -416,8 +423,8 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                     },
                                     child: LocationBox(
                                       label: 'TO',
-                                      code: toCity?['code'] ?? 'DEL',
-                                      city: toCity?['city'] ?? 'DELHI',
+                                      code: toCity['code'] ?? 'DEL',
+                                      city: toCity['city'] ?? 'DELHI',
                                     ),
                                   ),
                                 ),
@@ -437,15 +444,15 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Color(0xffF73130),
+                                    color: constants.themeColor1,
                                     width: 1,
                                   ),
-                                  color: Colors.red.shade50,
+                                  color: Colors.blue.shade50,
                                 ),
-                                child: const Center(
+                                child:  Center(
                                   child: Icon(
                                     Icons.swap_horiz,
-                                    color: Color(0xffF73130),
+                                    color: constants.themeColor1,
                                     size: 35,
                                   ),
                                 ),
@@ -521,7 +528,7 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'CLASS',
@@ -534,7 +541,7 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
                                       ),
                                       Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             selectedClass,
@@ -584,7 +591,6 @@ class _FlightBookingScreenState extends State<FlightBookingScreen> {
               DailyDeals(),
               FlightRoutesView(),
               OffersView(),
-
               // SearchDestinationsSection(),
               // Where2GoSection(),
               // BenefitSectionWidget(),

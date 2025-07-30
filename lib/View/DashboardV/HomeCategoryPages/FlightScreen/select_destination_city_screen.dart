@@ -33,7 +33,7 @@ class _SelectDestinationCityScreenState extends State<SelectDestinationCityScree
       if (query.isEmpty) {
         filteredCities = [];
       } else {
-        filteredCities = (vm.cities as List<Datum>)
+        filteredCities = (vm.cities)
             .where((city) {
           return (city.cityname?.toLowerCase().contains(query) ?? false) ||
               (city.countryname?.toLowerCase().contains(query) ?? false) ||

@@ -5,11 +5,18 @@ class DrawerHeaderCloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topRight,
-      child: IconButton(
-        icon: const Icon(Icons.close, size: 25, color: Colors.black),
-        onPressed: () => Navigator.pop(context),
+    return Padding(
+      padding: const EdgeInsets.only( right: 8.0),
+      child: Align(
+        alignment: Alignment.topRight,
+        child: IconButton(
+          icon: const Icon(Icons.close, size: 25, color: Colors.black),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
       ),
     );
   }

@@ -1,69 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../../../../ViewM/TourVM/international_destination_view_model.dart';
+import '../tour_category_view.dart';
 import 'city_builder.dart';
 
-class InternationalDestinations extends StatelessWidget {
+class InternationalDestinations extends StatefulWidget {
   const InternationalDestinations({super.key});
 
   @override
+  State<InternationalDestinations> createState() => _InternationalDestinationsState();
+}
+
+class _InternationalDestinationsState extends State<InternationalDestinations> {
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Center(
-          child: Column(
+    return ChangeNotifierProvider(
+      create: (_) => InternationalDestinationViewModel()..loadDestinations(),
+      child: Consumer<InternationalDestinationViewModel>(
+        builder: (context, model, _) {
+          if (model.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return Column(
             children: [
-              Text.rich(
-                TextSpan(
+              Center(
+                child: Column(
                   children: [
-                    TextSpan(
-                      text: 'Popular ',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xffF73130),
-                        fontSize: 20,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'International Destination',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        fontSize: 20,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Popular ',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xffF73130),
+                              fontSize: 18,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'International Destination',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              ...model.destinations.map((destination) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TourCategoryView(
+                          name: destination.name,
+                          slug: destination.slug,
+                        ),
+                      ),
+                    );
+                  },
+                  child: CityBuilder(
+                    img: destination.image,
+                    title: destination.name,
+                  ),
+                ),
+              )),
             ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...[
-          {
-            'title': 'Italy',
-            'img': 'https://tripoholidays.in/public/img/media_gallery/cd6eec6b-731b-4f79-91b5-e1f8b74b886e_mANtvQfPHI.jpg',
-          },
-          {
-            'title': 'Austria',
-            'img': 'https://tripoholidays.in/public/img/media_gallery/Museumsinsel_Berlin_Juli_2021_1_(cropped)_rruh3Pt1lN.jpg',
-          },
-          {
-            'title': 'Switzerland',
-            'img': 'https://tripoholidays.in/public/img/media_gallery/Norway_y6d1tks3nw.png',
-          },
-          {
-            'title': 'France',
-            'img': 'https://tripoholidays.in/public/img/media_gallery/eiffel-tower-and-fountains_1440x_wmBbC6nG0D.jpg',
-          },
-          {
-            'title': 'Netherlands',
-            'img': 'https://tripoholidays.in/public/img/media_gallery/Amsterdam%201_agMopUBBzk.jpg',
-          },
-        ].map((city) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: CityBuilder(img: city['img']!, title: city['title']!),
-        )),
-      ],
+          );
+        },
+      ),
     );
   }
 }

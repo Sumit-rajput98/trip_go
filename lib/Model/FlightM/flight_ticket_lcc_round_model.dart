@@ -1,10 +1,20 @@
 class FlightTicketRequestRound {
+  final String userEmail;
+  final String userPhone;
+  final bool isLcc;
+  final bool isLccIb;
+  final String type;
   final String traceId;
   final String resultIndex;
   final String resultIndex2;
   final List<Passenger> passengers;
 
-  FlightTicketRequestRound({
+  FlightTicketRequestRound( {
+    required this.userEmail,
+    required this.userPhone,
+    required this.isLcc,
+    required this.isLccIb,
+    required this.type,
     required this.traceId,
     required this.resultIndex,
     required this.resultIndex2,
@@ -12,6 +22,11 @@ class FlightTicketRequestRound {
   });
 
   Map<String, dynamic> toJson() => {
+    "IsLCC": isLcc,
+    "IsLCCIB": isLccIb,
+    'UserEmail': userEmail,
+    'UserPhone': userPhone,
+    'Type': type,
     "TraceId": traceId,
     "ResultIndex": resultIndex,
     "ResultIndexIB": resultIndex2,
@@ -31,12 +46,12 @@ class Passenger {
   final String passportExpiry;
   final Fare fare;
   final Fare fareIb;
-  final SeatDynamic seatDynamic;
-  final SeatDynamic seatDynamicIb;
-  final Baggage baggage;
-  final Baggage baggageIb;
-  final MealDynamic mealDynamic;
-  final MealDynamic mealDynamicIb;
+  final List<SeatDynamic> seatDynamic;
+  final List<SeatDynamic> seatDynamicIb;
+  final List<Baggage> baggage;
+  final List<Baggage> baggageIb;
+  final List<MealDynamic> mealDynamic;
+  final List<MealDynamic> mealDynamicIb;
   final String city;
   final String countryCode;
   final String countryName;
@@ -98,12 +113,12 @@ class Passenger {
     "PassportExpiry": passportExpiry,
     "Fare": fare.toJson(),
     "FareIB": fare.toJson(),
-    "SeatDynamic": seatDynamic.toJson(),
-    "SeatDynamicIB": seatDynamicIb.toJson(),
-    "Baggage": baggage.toJson(),
-    "BaggageIB": baggageIb.toJson(),
-    "MealDynamic": mealDynamic.toJson(),
-    "MealDynamicIB": mealDynamicIb.toJson(),
+    "SeatDynamic": seatDynamic.map((e) => e.toJson()).toList(),
+    "SeatDynamicIB": seatDynamicIb.map((e) => e.toJson()).toList(),
+    "Baggage": baggage.map((e) => e.toJson()).toList(),
+    "BaggageIB": baggageIb.map((e) => e.toJson()).toList(),
+    "MealDynamic": mealDynamic.map((e) => e.toJson()).toList(),
+    "MealDynamicIB": mealDynamicIb.map((e) => e.toJson()).toList(),
     "City": city,
     "CountryCode": countryCode,
     "CountryName": countryName,
@@ -157,6 +172,26 @@ class SeatDynamic {
     required this.currency,
     required this.price,
   });
+
+  // ✅ Add this method
+  static SeatDynamic empty() => SeatDynamic(
+    airlineCode: '',
+    flightNumber: '',
+    craftType: '',
+    origin: '',
+    destination: '',
+    availablityType: 0,
+    description: 0,
+    code: '',
+    rowNo: '',
+    seatNo: '',
+    seatType: 0,
+    seatWayType: 0,
+    compartment: 0,
+    deck: 0,
+    currency: '',
+    price: 0.0,
+  );
 
   Map<String, dynamic> toJson() => {
     "AirlineCode": airlineCode,

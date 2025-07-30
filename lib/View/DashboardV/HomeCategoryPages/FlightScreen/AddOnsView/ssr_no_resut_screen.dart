@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SsrNoResultScreen extends StatelessWidget {
+  const SsrNoResultScreen({super.key});
+
 
   @override
   Widget build(BuildContext context) {

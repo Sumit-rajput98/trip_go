@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trip_go/constants.dart'; // Make sure constants.themeColor2 is defined
+import 'package:trip_go/constants.dart';
 import '../../../../../../../Model/FlightM/add_traveller_model.dart';
 import 'custom_text_field.dart';
-import 'dob_calender_page.dart'; // Import the new custom widget
+import 'dob_calender_page.dart';
 
 class AddTravellerWidget extends StatefulWidget {
   final Traveller? existingTraveller;
 
-  const AddTravellerWidget({Key? key, this.existingTraveller}) : super(key: key);
+  const AddTravellerWidget({super.key, this.existingTraveller});
 
   @override
   State<AddTravellerWidget> createState() => _AddTravellerWidgetState();
@@ -26,25 +26,48 @@ class _AddTravellerWidgetState extends State<AddTravellerWidget> {
   @override
   void initState() {
     super.initState();
+
     if (widget.existingTraveller != null) {
       title = widget.existingTraveller!.title ?? 'Mr';
-      firstNameController.text = widget.existingTraveller!.firstName ?? '';
-      lastNameController.text = widget.existingTraveller!.lastName ?? '';
+      firstNameController.text = widget.existingTraveller!.firstName;
+      lastNameController.text = widget.existingTraveller!.lastName;
       emailController.text = widget.existingTraveller!.email ?? '';
+
       if (widget.existingTraveller!.dateOfBirth != null &&
           widget.existingTraveller!.dateOfBirth!.isNotEmpty) {
         selectedDate = DateTime.tryParse(widget.existingTraveller!.dateOfBirth!);
+
+        if (selectedDate != null) {
+          final paxType = calculatePaxType(selectedDate!);
+          widget.existingTraveller!.paxType = paxType;
+        }
       }
     } else {
       title = 'Mr';
     }
   }
 
+  int calculatePaxType(DateTime dob) {
+    final today = DateTime.now();
+    int age = today.year - dob.year;
+    if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
+      age--;
+    }
+
+    if (age >= 12) return 1; // Adult
+    if (age >= 2) return 2;  // Child
+    return 3;                // Infant
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.existingTraveller == null ? 'Add Traveller' : 'Edit Traveller', style: TextStyle(fontFamily: 'poppins'),),
+        title: Text(
+          widget.existingTraveller == null ? 'Add Traveller' : 'Edit Traveller',
+          style: const TextStyle(fontFamily: 'poppins'),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -55,7 +78,7 @@ class _AddTravellerWidgetState extends State<AddTravellerWidget> {
               DropdownButtonFormField<String>(
                 value: title,
                 items: const [
-                  DropdownMenuItem(value: 'Mr', child: Text('Mr',style: TextStyle(fontFamily: 'poppins'),)),
+                  DropdownMenuItem(value: 'Mr', child: Text('Mr', style: TextStyle(fontFamily: 'poppins'))),
                   DropdownMenuItem(value: 'Mrs', child: Text('Mrs', style: TextStyle(fontFamily: 'poppins'))),
                   DropdownMenuItem(value: 'Ms', child: Text('Ms', style: TextStyle(fontFamily: 'poppins'))),
                 ],
@@ -73,8 +96,7 @@ class _AddTravellerWidgetState extends State<AddTravellerWidget> {
                 controller: firstNameController,
                 label: 'First Name',
                 hint: 'Enter first name',
-                validator: (value) =>
-                value == null || value.trim().isEmpty ? 'First name is required' : null,
+                validator: (value) => value == null || value.trim().isEmpty ? 'First name is required' : null,
               ),
 
               const SizedBox(height: 20),
@@ -83,8 +105,7 @@ class _AddTravellerWidgetState extends State<AddTravellerWidget> {
                 controller: lastNameController,
                 label: 'Last Name',
                 hint: 'Enter last name',
-                validator: (value) =>
-                value == null || value.trim().isEmpty ? 'Last name is required' : null,
+                validator: (value) => value == null || value.trim().isEmpty ? 'Last name is required' : null,
               ),
 
               const SizedBox(height: 20),
@@ -140,20 +161,23 @@ class _AddTravellerWidgetState extends State<AddTravellerWidget> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      Navigator.pop(
-                        context,
-                        Traveller(
-                          title: title,
-                          firstName: firstNameController.text.trim(),
-                          lastName: lastNameController.text.trim(),
-                          dateOfBirth: selectedDate != null
-                              ? selectedDate!.toIso8601String().split('T')[0] // yyyy-MM-dd format
-                              : null,
-                          email: emailController.text.trim().isEmpty
-                              ? null
-                              : emailController.text.trim(),
-                        ),
+                      final dobString = selectedDate?.toIso8601String().split('T')[0];
+                      final paxType = calculatePaxType(selectedDate ?? DateTime.now());
+
+                      print("Traveller Added -> PaxType: $paxType, DOB: $dobString");
+
+                      final newTraveller = Traveller(
+                        title: title,
+                        firstName: firstNameController.text.trim(),
+                        lastName: lastNameController.text.trim(),
+                        dateOfBirth: dobString,
+                        email: emailController.text.trim().isEmpty
+                            ? null
+                            : emailController.text.trim(),
+                        paxType: paxType,
                       );
+
+                      Navigator.pop(context, newTraveller);
                     }
                   },
                   child: Text(

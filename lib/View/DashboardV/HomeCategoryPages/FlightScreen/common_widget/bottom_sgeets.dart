@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trip_go/constants.dart';
 
-import 'filter_bootom_sheet/airline_bottom_sheet.dart';
-import 'filter_bootom_sheet/sort_by_bottom_sheet.dart';
 import 'filter_bootom_sheet/time_bootom_sheet.dart';
 class AppColors {
   static const Color themeColor1 = Color(0xff1B499F);
@@ -16,18 +14,18 @@ class AppColors {
 }
 
 
-class GradientButton extends StatelessWidget {
+class GradientButton2 extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
 
-  const GradientButton({super.key, required this.text, required this.onPressed});
+  const GradientButton2({super.key, required this.text, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 48,
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      //margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         gradient: AppColors.gradient,
         borderRadius: BorderRadius.circular(12),
@@ -179,7 +177,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   const SizedBox(height: 10),
                   const Divider(),
 
-                  Text("Flight Price from New Delhi",
+                  Text("Flight Price from Arrival City",
                       style: const TextStyle(fontFamily: "Poppins", fontWeight: FontWeight.w500, fontSize: 15)),
                   RangeSlider(
                     values: delPrice,
@@ -191,7 +189,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   ),
 
                   if (!widget.isOneWay) ...[
-                    Text("Flight Price from Mumbai",
+                    Text("Flight Price from Destination City",
                         style: const TextStyle(fontFamily: "Poppins", fontWeight: FontWeight.w500, fontSize: 15)),
                     RangeSlider(
                       values: bomPrice,
@@ -205,7 +203,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
                   const Divider(),
 
-                  const Text("Departure from New Delhi",
+                  const Text("Departure from Arrival City",
                       style: TextStyle(fontFamily: "Poppins", fontWeight: FontWeight.w500, fontSize: 15)),
                   const SizedBox(height: 10),
                   Wrap(

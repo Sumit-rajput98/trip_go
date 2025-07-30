@@ -1,30 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/CabScreen/pages/cab_search_screen.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/VisaScreen/visa_screen.dart';
+import 'package:trip_go/View/Widgets/support_page.dart';
+// import 'package:trip_go/View/DashboardV/HomeCategoryPages/BusScreen/bus_screen_view.dart';
 import 'package:trip_go/constants.dart';
+import 'HomeCategoryPages/BusScreen/BusScreen/bus_screen_view.dart';
 import 'HomeCategoryPages/FlightScreen/flight_booking_screen.dart';
 import 'HomeCategoryPages/HotelScreen/hotel_page_screen.dart';
 import 'HomeCategoryPages/TourScreen/tour_page.dart';
 
 class VisaPage extends StatelessWidget {
+  const VisaPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Visa Page"));
 }
 
 class ActivityPage extends StatelessWidget {
+  const ActivityPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Activity Page"));
 }
 
 class ForexPage extends StatelessWidget {
+  const ForexPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Forex Page"));
 }
 
 class CabsPage extends StatelessWidget {
+  const CabsPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Cabs Page"));
 }
 
 class BusesPage extends StatelessWidget {
+  const BusesPage({super.key});
+
   @override
   Widget build(BuildContext context) => Center(child: Text("Buses Page"));
 }
@@ -32,7 +47,7 @@ class BusesPage extends StatelessWidget {
 class CategoryScreen extends StatefulWidget {
   final int initialIndex;
 
-  const CategoryScreen({Key? key, this.initialIndex = 0}) : super(key: key);
+  const CategoryScreen({super.key, this.initialIndex = 0});
 
   @override
   State<CategoryScreen> createState() => _CategoryScreenState();
@@ -52,7 +67,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     super.initState();
     selectedIndex = widget.initialIndex;
 
-    // Optional: Scroll to the last index initially if needed
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (selectedIndex == menuItems.length - 1) {
         _scrollToEnd();
@@ -74,7 +89,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     'assets/icons/holiday.png',
     'assets/icons/bu.png',
     'assets/icons/cab.png',
-    'assets/icons/visa.png', // Visa
+    'assets/icons/visa.png', 
     'assets/icons/insurance.png', // Activities
     'assets/icons/forex.png',
   ];
@@ -83,17 +98,18 @@ class _CategoryScreenState extends State<CategoryScreen> {
     FlightBookingScreen(),
     HotelScreen(),
     TourPage(),
-    BusesPage(),
-    CabsPage(),
-    Center(child: Text("Visa Page")), // Replace with actual screen later
-    Center(child: Text("Insurance Page")),
-    Center(child: Text("Forex Page")),
+    BusScreenView(),
+    CabSearchScreen(),
+    VisaScreen(),
+    VisaScreen(),
+    VisaScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         backgroundColor: Colors.white,
         elevation: 0,
         toolbarHeight: 40.0, // Sets the AppBar height to 40 pixels
@@ -156,7 +172,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                 fontSize: 14,
                                 fontFamily: 'poppins',
                                 fontWeight: FontWeight.w500,
-                                color: isSelected ? Colors.deepPurple : Colors.black,
+                                color: isSelected ? constants.themeColor1 : Colors.black,
                               ),
                             ),
                           ],
@@ -168,7 +184,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ),
             ),
           ),
-          SizedBox(height: 10),
+          // SizedBox(height: 10),
           Expanded(child: pages[selectedIndex]),
         ],
       ),

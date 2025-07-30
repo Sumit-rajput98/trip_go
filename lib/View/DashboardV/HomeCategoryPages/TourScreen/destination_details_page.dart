@@ -52,7 +52,7 @@ class DestinationDetailsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "$name",
+                    name,
                     style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.justify,
                   ),

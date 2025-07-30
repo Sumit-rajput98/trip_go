@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trip_go/Model/FlightM/flight_SSR_model_lcc.dart';
-import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/AddOnsView/seat_selection_page.dart';
 import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/AddOnsView/seat_selection_page_on_return.dart';
+import '../../../../../Model/FlightM/flight_SSR_round_model.dart';
 
 class SeatSelectionPageRT extends StatefulWidget {
-  final Data? flightSsrRes1;
-  final Data? flightSsrRes2;
-  final int? adultCount;
+  final Data1? flightSsrRes1;
+  final Data1? flightSsrRes2;
+  final int adultCount;
+  final int? childrenCount;
+  final int? infantsCount;
 
   const SeatSelectionPageRT({
     super.key,
     this.flightSsrRes1,
     this.flightSsrRes2,
-    this.adultCount,
+    required this.adultCount,
+    this.childrenCount,
+    this.infantsCount,
   });
 
   @override
@@ -23,7 +26,7 @@ class SeatSelectionPageRT extends StatefulWidget {
 class _SeatSelectionPageRTState extends State<SeatSelectionPageRT>
     with TickerProviderStateMixin {
   late final TabController _tabController;
-  final List<String> _tabTitles = ['DEL-BOM', 'BOM-DEL'];
+  final List<String> _tabTitles = ['Onboard', 'Return'];
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class _SeatSelectionPageRTState extends State<SeatSelectionPageRT>
     _tabController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -87,11 +91,15 @@ class _SeatSelectionPageRTState extends State<SeatSelectionPageRT>
                   SeatSelectionPageOnReturn(
                     flightSsrRes: widget.flightSsrRes1,
                     adultCount: widget.adultCount,
+                    childrenCount: widget.childrenCount,
+                    infantsCount: widget.infantsCount,
                     isReturn: false,
                   ),
                   SeatSelectionPageOnReturn(
                     flightSsrRes: widget.flightSsrRes2,
                     adultCount: widget.adultCount,
+                    childrenCount: widget.childrenCount,
+                    infantsCount: widget.infantsCount,
                     isReturn: true,
                   ),
                 ],

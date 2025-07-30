@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/cupertino.dart';
-
+import 'package:provider/provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/auth_provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/profile/login/login_view.dart';
+import 'package:trip_go/View/DashboardV/bottom_navigation_bar.dart';
+import 'package:trip_go/View/DashboardV/my_bookings_screen.dart';
 import 'package:trip_go/View/Widgets/Drawer/custom_drawer.dart';
-
+import 'package:trip_go/View/Widgets/wallat_page.dart';
 
 class DrawerMainOptions extends StatelessWidget {
   const DrawerMainOptions({super.key});
@@ -16,20 +19,61 @@ class DrawerMainOptions extends StatelessWidget {
       child: Column(
         children: [
           _drawerTile(
-            icon: CupertinoIcons.tickets,
+            icon: Icons.confirmation_number,
             title: constants.titleOne,
             subtitle: constants.subtitleOne,
+            onTap: () => _handleBookingTap(context),
           ),
           _divider(),
           _drawerTile(
             icon: Icons.account_balance_wallet_outlined,
             title: "TripGo wallet",
             subtitle: constants.subtitleTwo,
+            onTap: () => _handleWalletTap(context),
           ),
           //_proTile(),
         ],
       ),
     );
+  }
+
+  void _handleBookingTap(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    Navigator.pop(context);  
+   if (authProvider.isLoggedIn) {
+      // Navigate to wallet page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
+      );
+    }
+    else{
+       Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginView()),
+      );
+    }
+  }
+
+  void _handleWalletTap(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    Navigator.pop(context); // Close drawer first
+
+    if (authProvider.isLoggedIn) {
+      // Navigate to wallet page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const WalletPage()),
+      );
+    } else {
+      // Navigate to login with callback
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginView(),
+        ),
+      );
+    }
   }
 
   Widget _divider() => Padding(
@@ -41,66 +85,21 @@ class DrawerMainOptions extends StatelessWidget {
     ),
   );
 
-  Widget _drawerTile({required IconData icon, required String title, required String subtitle}) {
-    return InkWell(
-      onTap: () {},
-      child: ListTile(
-        leading: Icon(icon, size: 30, color: const Color(0xff1B499F)),
-        title: Text(title, style: constants.titleStyle),
-        subtitle: Text(subtitle, style: constants.fontStyle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 20),
-      ),
-    );
-  }
-
-  Widget _proTile() {
-    return InkWell(
-      onTap: () {},
-      child: Container(
-        height: 80,
-        decoration: BoxDecoration(
-          color: const Color(0xff1B499F),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: ListTile(
-          leading: ImageIcon(
-            const NetworkImage("https://cdn-icons-png.flaticon.com/512/9967/9967681.png"),
-            size: 30,
-            color: Colors.yellow[800],
-          ),
-          title: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Text("TripGo Pro", style: constants.emtPro),
-                const SizedBox(width: 10),
-                Container(
-                  height: 15,
-                  width: 35,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.red,
-                  ),
-                  child: Center(
-                    child: Text(
-                      "NEW",
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          subtitle: Text("Join TripGo Pro for premium services", style: constants.emtPro2),
-          trailing: Icon(Icons.arrow_forward_ios, size: 20, color: Colors.yellow[800]),
-        ),
-
-      ),
+  Widget _drawerTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, size: 30, color: const Color(0xff1B499F)),
+      title: Text(title, style: constants.titleStyle),
+      subtitle: Text(subtitle, style: constants.fontStyle),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 20),
     );
   }
 }
+
+
+

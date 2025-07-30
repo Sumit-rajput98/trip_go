@@ -1,21 +1,37 @@
 class FlightTicketRequest {
+  final bool isLcc;
+  final String? userEmail;
+  final String? userPhone;
+  final String? type;
   final String traceId;
   final String resultIndex;
   final List<Passenger> passengers;
   final List<SeatDynamic> seatDynamic;
+  final List<BaggageDynamic>? baggageDynamic;
+  final List<MealDynamic>? mealDynamic;
 
   FlightTicketRequest({
+    required this.isLcc,
+     this.userEmail,
+    this.userPhone,
+    this.type,
     required this.traceId,
     required this.resultIndex,
     required this.passengers,
     required this.seatDynamic,
+    this.baggageDynamic,
+    this.mealDynamic,
   });
 
   Map<String, dynamic> toJson() => {
+    'IsLCC': isLcc,
+    'UserEmail': userEmail,
+    'UserPhone': userPhone,
+    "Type":type,
     "TraceId": traceId,
     "ResultIndex": resultIndex,
     "Passengers": passengers.map((e) => e.toJson()).toList(),
-    "SeatDynamic": seatDynamic.map((e) => e.toJson()).toList(),
+
   };
 }
 
@@ -44,6 +60,9 @@ class Passenger {
   final String gstCompanyName;
   final String gstNumber;
   final String gstCompanyEmail;
+  final List<SeatDynamic> seatDynamic;
+  final List<BaggageDynamic>? baggageDynamic;
+  final List<MealDynamic>? mealDynamic;
 
   Passenger({
     required this.title,
@@ -65,6 +84,9 @@ class Passenger {
     required this.isLeadPax,
     required this.ffAirlineCode,
     required this.ffNumber,
+    required this.seatDynamic,
+    this.baggageDynamic,
+    this.mealDynamic,
     required this.gstCompanyAddress,
     required this.gstCompanyContactNumber,
     required this.gstCompanyName,
@@ -92,12 +114,75 @@ class Passenger {
     "IsLeadPax": isLeadPax,
     "FFAirlineCode": ffAirlineCode,
     "FFNumber": ffNumber,
+    "SeatDynamic": seatDynamic.map((e) => e.toJson()).toList(),
+    "Baggage": baggageDynamic?.map((e) => e.toJson()).toList(),
+    "MealDynamic": mealDynamic?.map((e) => e.toJson()).toList(),
     "GSTCompanyAddress": gstCompanyAddress,
     "GSTCompanyContactNumber": gstCompanyContactNumber,
     "GSTCompanyName": gstCompanyName,
     "GSTNumber": gstNumber,
     "GSTCompanyEmail": gstCompanyEmail,
   };
+}
+
+class MealDynamic {
+  final String airlineCode;
+  final String flightNumber;
+  final int wayType;
+  final String code;
+  final dynamic description; // Can be int or string
+  final String airlineDescription;
+  final int quantity;
+  final String currency;
+  final double price;
+  final String origin;
+  final String destination;
+
+  MealDynamic({
+    required this.airlineCode,
+    required this.flightNumber,
+    required this.wayType,
+    required this.code,
+    required this.description,
+    required this.airlineDescription,
+    required this.quantity,
+    required this.currency,
+    required this.price,
+    required this.origin,
+    required this.destination,
+  });
+
+  factory MealDynamic.fromJson(Map<String, dynamic> json) {
+    return MealDynamic(
+      airlineCode: json['AirlineCode'] ?? '',
+      flightNumber: json['FlightNumber'] ?? '',
+      wayType: json['WayType'] ?? 0,
+      code: json['Code'] ?? '',
+      description: json['Description'],
+      airlineDescription: json['AirlineDescription'] ?? '',
+      quantity: json['Quantity'] ?? 0,
+      currency: json['Currency'] ?? '',
+      price: (json['Price'] as num?)?.toDouble() ?? 0.0,
+      origin: json['Origin'] ?? '',
+      destination: json['Destination'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'AirlineCode': airlineCode,
+      'FlightNumber': flightNumber,
+      'WayType': wayType,
+      'Code': code,
+      'Description': description,
+      'AirlineDescription': airlineDescription,
+      'Quantity': quantity,
+      'Currency': currency,
+      'Price': price,
+      'Origin': origin,
+      'Destination': destination,
+    };
+  }
 }
 
 class SeatDynamic {
@@ -155,6 +240,62 @@ class SeatDynamic {
     "Currency": currency,
     "Price": price,
   };
+}
+
+class BaggageDynamic {
+  final String airlineCode;
+  final String flightNumber;
+  final int wayType;
+  final String code;
+  final int description;
+  final int weight;
+  final String currency;
+  final double price;
+  final String origin;
+  final String destination;
+
+  BaggageDynamic({
+    required this.airlineCode,
+    required this.flightNumber,
+    required this.wayType,
+    required this.code,
+    required this.description,
+    required this.weight,
+    required this.currency,
+    required this.price,
+    required this.origin,
+    required this.destination,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      "AirlineCode": airlineCode,
+      "FlightNumber": flightNumber,
+      "WayType": wayType,
+      "Code": code,
+      "Description": description,
+      "Weight": weight,
+      "Currency": currency,
+      "Price": price,
+      "Origin": origin,
+      "Destination": destination,
+    };
+  }
+
+  factory BaggageDynamic.fromJson(Map<String, dynamic> json) {
+    return BaggageDynamic(
+      airlineCode: json['AirlineCode'] ?? '',
+      flightNumber: json['FlightNumber'] ?? '',
+      wayType: json['WayType'] ?? 0,
+      code: json['Code'] ?? '',
+      description: json['Description'] ?? 0,
+      weight: json['Weight'] ?? 0,
+      currency: json['Currency'] ?? '',
+      price: (json['Price'] as num?)?.toDouble() ?? 0.0,
+      origin: json['Origin'] ?? '',
+      destination: json['Destination'] ?? '',
+    );
+  }
 }
 
 class FlightTicketResponse {

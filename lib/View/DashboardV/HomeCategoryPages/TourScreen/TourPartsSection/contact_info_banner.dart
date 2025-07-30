@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ContactInfoBanner extends StatelessWidget {
+  const ContactInfoBanner({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Padding(

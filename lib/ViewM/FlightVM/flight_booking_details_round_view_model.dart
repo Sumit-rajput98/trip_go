@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../AppManager/Api/api_service/FlightSearchService/flight_booking_details_round_service.dart';
-import '../../AppManager/Api/api_service/FlightSearchService/flight_booking_details_service.dart';
-import '../../Model/FlightM/flight_booking_details.dart';
 import '../../Model/FlightM/flight_booking_details_round_model.dart';
 
 class FlightBookingDetailsRoundViewModel extends ChangeNotifier {

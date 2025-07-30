@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:trip_go/View/DashboardV/HomeCategoryPages/TourScreen/tour_subcategory_view.dart';
+import '../../../../../ViewM/TourVM/trending_packages_view_model.dart';
 import '../../../../../constants.dart';
 
-// Your TourSliderCard widget as given
 class TourSliderCard extends StatelessWidget {
   final String imageUrl;
   final String title;
@@ -20,10 +22,10 @@ class TourSliderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      width: 340,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: 390,
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         clipBehavior: Clip.hardEdge,
         child: Stack(
           children: [
@@ -39,7 +41,7 @@ class TourSliderCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Color(0xff002543),
+                  color: constants.themeColor2,
                   borderRadius: BorderRadius.circular(2),
                 ),
                 child: Text(
@@ -162,7 +164,6 @@ class _IconWithText extends StatelessWidget {
   }
 }
 
-// Auto sliding slider widget using PageView and Timer
 class AutoSlidingTourSlider extends StatefulWidget {
   const AutoSlidingTourSlider({super.key});
 
@@ -211,8 +212,11 @@ class _AutoSlidingTourSliderState extends State<AutoSlidingTourSlider> {
   void initState() {
     super.initState();
 
+    Provider.of<TrendingPackagesViewModel>(context, listen: false).loadTrendingPackages();
+
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_currentPage < _cards.length - 1) {
+      final packages = Provider.of<TrendingPackagesViewModel>(context, listen: false).packages;
+      if (_currentPage < packages.length - 1) {
         _currentPage++;
       } else {
         _currentPage = 0;
@@ -236,15 +240,45 @@ class _AutoSlidingTourSliderState extends State<AutoSlidingTourSlider> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 390,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: _cards.length,
-        itemBuilder: (context, index) {
-          return _cards[index];
-        },
-      ),
+    return Consumer<TrendingPackagesViewModel>(
+      builder: (context, viewModel, _) {
+        if (viewModel.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (viewModel.packages.isEmpty) {
+          return const Center(child: Text("No trending packages found"));
+        }
+
+        return SizedBox(
+          height: 390,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: viewModel.packages.length,
+            itemBuilder: (context, index) {
+              final package = viewModel.packages[index];
+              return GestureDetector(
+                onTap: (){
+                  if (package.slug.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TourSubcategoryView(slug: package.slug),
+                      ),
+                    );
+                  }
+                },
+                child: TourSliderCard(
+                  imageUrl: package.image,
+                  title: package.name,
+                  nights: '${package.noOfNights} nights',
+                  price: package.offerPrice,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

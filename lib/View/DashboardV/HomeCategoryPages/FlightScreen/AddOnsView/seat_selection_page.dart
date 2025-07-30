@@ -10,13 +10,17 @@ class SeatSelectionPage extends StatefulWidget {
   Map<String, dynamic>? fare;
   final Data? flightSsrRes;
   final int? adultCount;
-  SeatSelectionPage({super.key, this.flightSsrRes, this.adultCount, this.fare});
+  final int? childrenCount;
+  final int? infantCount;
+  SeatSelectionPage({super.key, this.flightSsrRes, this.adultCount, this.fare, this.infantCount, this.childrenCount});
 
   @override
   State<SeatSelectionPage> createState() => _SeatSelectionPageState();
 }
 
-class _SeatSelectionPageState extends State<SeatSelectionPage> {
+class _SeatSelectionPageState extends State<SeatSelectionPage> with AutomaticKeepAliveClientMixin{
+  @override
+  bool get wantKeepAlive => true;
   List<String> selectedSeats = [];
   List<Seat> selectedSeatDetails = [];
   bool isDetailExpanded = false;
@@ -50,8 +54,9 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
       for (final segmentSeat in seatDynamic.segmentSeat) {
         for (final rowSeat in segmentSeat.rowSeats) {
           for (final seat in rowSeat.seats) {
-            if (seat.availablityType == 0 || seat.availablityType == 5)
+            if (seat.availablityType == 0 || seat.availablityType == 5) {
               continue; // Skip hidden seats
+            }
 
             apiSeatMap[seat.code] = seat;
 
@@ -139,7 +144,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
 
             // Print total price after removal
             print('Total Seat Price after removal: ₹${seatProvider.totalPrice}');
-          } else if (selectedSeats.length < widget.adultCount!) {
+          } else if (selectedSeats.length < (widget.adultCount ?? 0) + (widget.childrenCount ?? 0)) {
             selectedSeats.add(seatId);
             final seat = apiSeatMap[seatId];
             if (seat != null) {
@@ -198,11 +203,11 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
 
   // Update seat content builder
   Widget _buildSeatContent(
-    bool isSelected,
-    String type,
-    double size,
-    Seat seat,
-  ) {
+      bool isSelected,
+      String type,
+      double size,
+      Seat seat,
+      ) {
     if (!(seat.availablityType == 1)) {
       return Icon(
         seat.availablityType == 3 ? Icons.lock : Icons.close,
@@ -214,26 +219,26 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
     return isSelected
         ? Icon(Icons.check, size: size * 0.7, color: Colors.white)
         : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              type,
-              style: GoogleFonts.poppins(
-                fontSize: size * 0.35,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-            Text(
-              '₹${seat.price!.toInt()}',
-              style: GoogleFonts.poppins(
-                fontSize: size * 0.3,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        );
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          type,
+          style: GoogleFonts.poppins(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+        Text(
+          '₹${seat.price!.toInt()}',
+          style: GoogleFonts.poppins(
+            fontSize: size * 0.3,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
   }
 
   // Updated row builder
@@ -275,6 +280,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     bool isDelBomSelected = false;
     final screenWidth = MediaQuery.of(context).size.width;
     final seatSize = screenWidth / 14;
@@ -356,31 +362,31 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
                       .sublist(0, 3)
                       .map(
                         (c) => SizedBox(
-                          width: seatSize,
-                          child: Text(
-                            c,
-                            textAlign: TextAlign.left,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      width: seatSize,
+                      child: Text(
+                        c,
+                        textAlign: TextAlign.left,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
+                  ),
                   SizedBox(width: seatSize * 1.2),
                   ...columns
                       .sublist(3)
                       .map(
                         (c) => SizedBox(
-                          width: seatSize,
-                          child: Text(
-                            c,
-                            textAlign: TextAlign.right,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      width: seatSize,
+                      child: Text(
+                        c,
+                        textAlign: TextAlign.right,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
+                  ),
                   SizedBox(width: seatSize * 1.3),
                 ],
               ),

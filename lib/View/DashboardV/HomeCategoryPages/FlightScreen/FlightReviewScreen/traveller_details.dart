@@ -8,30 +8,56 @@ import 'package:trip_go/View/DashboardV/HomeCategoryPages/FlightScreen/FlightRev
 import 'package:trip_go/ViewM/FlightVM/flight_ssr_lcc_view_model.dart';
 import '../../../../../Model/FlightM/add_traveller_model.dart';
 import '../../../../../constants.dart';
+import '../AddOnsView/international_addons_page.dart';
 import '../FlightWidgets/gst_bottom_sheet.dart';
 import '../common_widget/bottom_bar.dart';
 import '../common_widget/loading_screen.dart';
+import 'package:intl/intl.dart';
 
 class TravellerDetails extends StatefulWidget {
   final Map<String, dynamic> fare;
+  final bool? isInternational;
   final String traceId;
   final String resultIndex;
   final int? adultCount;
+  final int? childrenCount;
+  final int? infantCount;
   final int price;
   final bool isLcc;
-  const TravellerDetails({super.key,required this.fare, required this.traceId, required this.resultIndex, this.adultCount, required this.price, required this.isLcc});
+  final String originCity;
+  final String destinationCity;
+  final String flightName;
+  final String departureTime;
+  final String arrivalTime;
+  final String duration;
+  final String airlineName;
+
+  const TravellerDetails({super.key,required this.fare,this.isInternational, required this.traceId, required this.resultIndex, this.adultCount,this.infantCount, this.childrenCount, required this.price, required this.isLcc, required this.originCity, required this.destinationCity, required this.departureTime, required this.arrivalTime, required this.duration,required this.flightName, required this.airlineName});
 
   @override
   State<TravellerDetails> createState() => _TravellerDetailsState();
 }
 
 class _TravellerDetailsState extends State<TravellerDetails> {
+  String formatTime(String timeStr) {
+    try {
+      final dateTime = DateTime.parse(timeStr);
+      return DateFormat.Hm().format(dateTime); // e.g., "23:00"
+    } catch (e) {
+      return timeStr; // fallback if format fails
+    }
+  }
+  String formatToDayMonth(String dateTimeString) {
+    DateTime parsedDate = DateTime.parse(dateTimeString);
+    return DateFormat('d MMMM').format(parsedDate); // '20 June'
+  }
   final TextEditingController emailController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   bool isChecked = false;
   bool isCheckedGst = false;
   String? errorMessage;
   String? emailError;
+  String? phoneError;
   String? countErrorMessage;
   String? companyName;
   String? regNo;
@@ -41,6 +67,8 @@ class _TravellerDetailsState extends State<TravellerDetails> {
     setState(() {
       emailError = null;
       errorMessage = null;
+      phoneError = null;
+      countErrorMessage = null;
     });
 
     bool hasError = false;
@@ -52,70 +80,131 @@ class _TravellerDetailsState extends State<TravellerDetails> {
       hasError = true;
     }
 
+    if (mobileController.text.trim().isEmpty) {
+      setState(() {
+        phoneError = "Mobile No. is required";
+      });
+      hasError = true;
+    }
+
     if (!isChecked) {
       setState(() {
         errorMessage = "Please accept T&C and Privacy Policy";
       });
       hasError = true;
-    } else if ((widget.adultCount ?? 0) > travellers.length) {
+    } else if (((widget.adultCount ?? 0) + (widget.childrenCount ?? 0)) > travellers.length) {
       setState(() {
-        countErrorMessage = "Total no. of Adults must be: ${widget.adultCount}";
+        countErrorMessage =
+        "Total number of travellers must be: ${(widget.adultCount ?? 0) + (widget.childrenCount ?? 0)}";
       });
       hasError = true;
     }
 
     if (hasError) return;
 
-    final viewModel = Provider.of<FlightSsrLccViewModel>(
-      context,
-      listen: false,
-    );
+    final viewModel = Provider.of<FlightSsrLccViewModel>(context, listen: false);
 
-    // Show loading
+    // Show loading while fetching SSR
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoadingScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const LoadingScreen()),
     );
 
     final request = FlightSsrLccRequest(
-        traceId: widget.traceId,
-        resultIndex: widget.resultIndex,
-        fare: widget.fare
+      traceId: widget.traceId,
+      resultIndex: widget.resultIndex,
+      fare: widget.fare,
     );
 
-    viewModel.fetchSsrLcc(request).then((_){
-      Navigator.pop(context);
-      print("### ${widget.traceId}");
+    viewModel.fetchSsrLcc(request).then((_) {
+      Navigator.pop(context); // remove loading
 
       final response = viewModel.flightSsrLccRes;
-      print('done');
 
       if (response?.data == null) {
-        // Handle the null case: show an error or don't navigate
-        Navigator.push(context, MaterialPageRoute(builder: (context)=> SsrNoResultScreen()));
-        return; // stop further navigation
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SsrNoResultScreen()),
+        );
+        return;
       }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddOnsPage(
-            flightSsrLccRes: response!.data,
-            adultCount: widget.adultCount,
-            rt: false,
-            price: widget.price,
-            resultIndex: widget.resultIndex,
-            traceId: widget.traceId,
-            fare: widget.fare,
-            travellers: travellers, // << pass the travellers list here
-            isLcc: widget.isLcc, email: emailController.text,
-            companyName: companyName, regNo: regNo,
-          ),
-        ),
-      );
+      print("### ${widget.traceId}");
+      print("Travellers count: ${travellers.length}");
+      print("SeatDynamic: ${response?.data?.seatDynamic}");
+      print("Baggage: ${response?.data?.baggage}");
+      print("MealDynamic: ${response?.data?.mealDynamic}");
 
+      if (widget.isInternational == true) {
+        final seatDynamic = response!.data?.seatDynamic ?? [];
+        final baggage = response.data?.baggage ?? [];
+        final mealDynamic = response.data?.mealDynamic ?? [];
+
+        final onwardData = Data(
+          traceId: response.data!.traceId,
+          seatDynamic: seatDynamic.isNotEmpty ? [seatDynamic[0]] : [],
+          baggage: baggage.isNotEmpty ? [baggage[0]] : [],
+          mealDynamic: mealDynamic.isNotEmpty ? [mealDynamic[0]] : [],
+          responseStatus: 1,
+        );
+
+        final returnData = Data(
+          traceId: response.data!.traceId,
+          seatDynamic: seatDynamic.length > 1 ? [seatDynamic[1]] : [],
+          baggage: baggage.length > 1 ? [baggage[1]] : [],
+          mealDynamic: mealDynamic.length > 1 ? [mealDynamic[1]] : [],
+          responseStatus: 1,
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InternationalAddOnsPage(
+              isInternational: widget.isInternational,
+              flightSsrLccRes1: onwardData,
+              flightSsrLccRes2: returnData,
+              adultCount: widget.adultCount,
+              childrenCount: widget.childrenCount,
+              infantCount: widget.infantCount,
+              rt: false,
+              price: widget.price,
+              resultIndex: widget.resultIndex,
+              traceId: widget.traceId,
+              fare: widget.fare,
+              travellers: travellers,
+              isLcc: widget.isLcc,
+              email: emailController.text.trim(),
+              companyName: companyName,
+              regNo: regNo,
+              phone: mobileController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddOnsPage(
+              isInternational: widget.isInternational,
+              flightSsrLccRes: response!.data!,
+              adultCount: widget.adultCount,
+              childrenCount: widget.childrenCount,
+              infantCount: widget.infantCount,
+              rt: false,
+              price: widget.price,
+              resultIndex: widget.resultIndex,
+              traceId: widget.traceId,
+              fare: widget.fare,
+              travellers: travellers,
+              isLcc: widget.isLcc,
+              email: emailController.text.trim(),
+              companyName: companyName,
+              regNo: regNo,
+              phone: mobileController.text.trim(),
+            ),
+          ),
+        );
+      }
     });
   }
 
@@ -129,9 +218,17 @@ class _TravellerDetailsState extends State<TravellerDetails> {
         });
       }
     });
+    mobileController.addListener(() {
+      if (phoneError != null && mobileController.text.trim().isNotEmpty) {
+        setState(() {
+          phoneError = null;
+        });
+      }
+    });
   }
   @override
   Widget build(BuildContext context) {
+    print("${widget.isInternational}");
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -171,7 +268,7 @@ class _TravellerDetailsState extends State<TravellerDetails> {
                   padding: const EdgeInsets.fromLTRB(10, 90, 10, 0),
                   child: Column(
                     children: [
-                      _buildFlightInfoCard(),
+                      _buildFlightInfoCard("${widget.originCity}-${widget.destinationCity}","${formatToDayMonth(widget.departureTime)} | ${formatTime(widget.departureTime)}-${formatTime(widget.arrivalTime)} | ${widget.duration}", "${widget.flightName}",widget.airlineName),
                       _buildTravellerSection(),
                       _buildContactDetails(),
                       Padding(
@@ -293,56 +390,104 @@ class _TravellerDetailsState extends State<TravellerDetails> {
       bottomNavigationBar: buildBottomBar(context, _navigatorFunc,price: widget.price),
     );
   }
+  Widget _buildFlightInfoCard(String title, String subtitle, String desc, String airlineName) {
+    final List<Map<String, String>> airlines = [
+      {
+        "name": "Air India",
+        "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-QO8gVe353NPaAV3wid57LAtWqIdet-EVMA&s",
+      },
+      {
+        "name": "Air India Express",
+        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/IX.png",
+      },
+      {
+        "name": "Indigo",
+        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/6E.png",
+      },
+      {
+        "name": "Vistara",
+        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/UK.png",
+      },
+      {
+        "name": "SpiceJet",
+        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/SG.png",
+      },
+      {
+        "name": "GoAir",
+        "logo": "https://flight.easemytrip.com/Content/AirlineLogon/G8.png",
+      },
+    ];
 
-  Widget _buildFlightInfoCard() {
+    String getAirlineLogo(String airlineName) {
+      final airline = airlines.firstWhere(
+            (airline) => airline['name']!.toLowerCase() == airlineName.toLowerCase(),
+        orElse: () => {"logo": "https://via.placeholder.com/50"},
+      );
+      return airline['logo']!;
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Container(
-        height: 110,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(.4)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 2,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(15),
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(
-                    "https://flight.easemytrip.com/Content/AirlineLogon/SG.png"),
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.grey.shade100,
+              backgroundImage: NetworkImage(getAirlineLogo(airlineName)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    desc,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                Text(
-                  constants.titleOne,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  constants.subTitleOne,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(
-                  constants.descriptionOne,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.black),
-            const SizedBox(width: 10),
+            const Icon(Icons.keyboard_arrow_down_outlined, color: Colors.black54),
           ],
         ),
       ),
@@ -373,19 +518,19 @@ class _TravellerDetailsState extends State<TravellerDetails> {
                   ),
                   const Spacer(),
                   _travellerType(
-                      count: travellers.length.toString(),
+                      count: widget.adultCount.toString(),
                       label: "ADULT",
                       iconUrl:
                       "https://flight.easemytrip.com/M_Content/img/adult-nw-icon.png"),
                   const SizedBox(width: 10),
                   _travellerType(
-                      count: "0",
+                      count: widget.childrenCount.toString(),
                       label: "CHILDREN",
                       iconUrl:
                       "https://flight.easemytrip.com/M_Content/img/adult-nw-icon.png"),
                   const SizedBox(width: 10),
                   _travellerType(
-                      count: "0",
+                      count: widget.infantCount.toString(),
                       label: "INFANT(S)",
                       iconUrl:
                       "https://www.easemytrip.com/M_Content/img/infant-nw-icon.png"),
@@ -589,6 +734,7 @@ class _TravellerDetailsState extends State<TravellerDetails> {
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       hintText: "Enter Mobile No",
+                      errorText: phoneError,
                       hintStyle: GoogleFonts.poppins(),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),

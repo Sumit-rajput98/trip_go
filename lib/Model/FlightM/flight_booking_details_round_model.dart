@@ -540,9 +540,15 @@ class Segment {
       destinationCountryCode: destinationAirport['CountryCode'] ?? '',
       destinationCountryName: destinationAirport['CountryName'] ?? '',
       arrTime: json['Destination']?['ArrTime'] ?? '',
-      duration: json['Duration'] ?? 0,
-      groundTime: json['GroundTime'] ?? 0,
-      mile: json['Mile'] ?? 0,
+      duration: (json['Duration'] is int)
+          ? json['Duration']
+          : (json['Duration'] as num).toInt(),
+      groundTime: (json['GroundTime'] is int)
+          ? json['GroundTime']
+          : (json['GroundTime'] as num).toInt(),
+      mile: (json['Mile'] is int)
+          ? json['Mile']
+          : (json['Mile'] as num).toInt(),
       stopOver: json['StopOver'] ?? false,
       flightInfoIndex: json['FlightInfoIndex'] ?? '',
       stopPoint: json['StopPoint'] ?? '',

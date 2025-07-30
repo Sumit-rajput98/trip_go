@@ -83,6 +83,7 @@ class FlightResult {
   final bool isRefundable;
   final String airlineRemark;
   final Fare fare;
+  // final bool? isUpselledAllowed;
   final List<List<Segment>> segments;
 
   FlightResult({
@@ -91,11 +92,13 @@ class FlightResult {
     required this.airlineRemark,
     required this.fare,
     required this.segments,
+    // this.isUpselledAllowed,
   });
 
   factory FlightResult.fromJson(Map<String, dynamic> json) {
     return FlightResult(
       resultIndex: json['ResultIndex'],
+      // isUpselledAllowed: json['IsUpsellAllowed'],
       isRefundable: json['IsRefundable'],
       airlineRemark: json['AirlineRemark'] ?? "",
       fare: Fare.fromJson(json['Fare']),

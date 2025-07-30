@@ -8,13 +8,13 @@ class AddMobileNumber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     return Dialog(
       child: Container(
         height: 250,
         decoration: BoxDecoration(color: Colors.white),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             children: [
               Container(
@@ -106,7 +106,7 @@ class AddMobileNumber extends StatelessWidget {
               SizedBox(height: 30,),
               InkWell(
                 onTap: () {
-                  if (_formKey.currentState!.validate()) {
+                  if (formKey.currentState!.validate()) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => ProfilePage()),

@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:trip_go/AppManager/Api/api_service/api_constant.dart';
 import 'package:http/http.dart' as http;
 

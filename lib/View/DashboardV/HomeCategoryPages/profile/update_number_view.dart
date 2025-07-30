@@ -28,7 +28,7 @@ class _UpdateNumberViewState extends State<UpdateNumberView> {
     final width = MediaQuery.of(context).size.width;
 
     final TextEditingController mobileController = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     return Theme(
       data: Theme.of(context).copyWith(

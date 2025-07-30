@@ -4,7 +4,7 @@ class ClassSelectionBottomSheet extends StatefulWidget {
   final String initialClass;
   final ValueChanged<String> onClassSelected;
 
-  ClassSelectionBottomSheet({required this.initialClass, required this.onClassSelected});
+  const ClassSelectionBottomSheet({super.key, required this.initialClass, required this.onClassSelected});
 
   @override
   _ClassSelectionBottomSheetState createState() => _ClassSelectionBottomSheetState();
@@ -80,7 +80,7 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          Container(
+          SizedBox(
             height: 50,
             width: double.infinity,
             child: ElevatedButton(
@@ -88,10 +88,11 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
                 widget.onClassSelected(selectedClass);
                 Navigator.pop(context);
               },
-              child: Text('DONE', style: TextStyle(color: Colors.white, fontSize: 18)),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+              child: Text('DONE', style: TextStyle(color: Colors.white, fontSize: 18)),
             ),
           ),
+          SizedBox(height: 40,),
         ],
       ),
     );

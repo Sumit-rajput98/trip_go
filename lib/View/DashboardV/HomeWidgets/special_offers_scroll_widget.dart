@@ -10,19 +10,21 @@ class SpecialOffersScrollWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<String> offersLabels = [
-      'Top Offers',
+      'All',
       'Flights',
       'Hotels',
-      'Buses',
+      'Holidays',
+      'Cabs',
+      'Bus',
     ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(offersLabels.length, (index) {
-          bool isSelected = offersLabels[index] == selectedOffer; // Check if it's the selected offer
+          bool isSelected = offersLabels[index] == selectedOffer; 
           return GestureDetector(
-            onTap: () => onOfferTapped(offersLabels[index]), // Pass the tapped offer to the parent
+            onTap: () => onOfferTapped(offersLabels[index]), 
             child: Container(
               width: 100,
               height: 50,

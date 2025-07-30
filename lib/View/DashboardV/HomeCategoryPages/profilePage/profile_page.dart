@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../constants.dart';
-import 'add_gmail_dialog.dart';
-import 'add_mobile_dialog.dart';
-import 'change_password.dart';
-import 'delete_gmail.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

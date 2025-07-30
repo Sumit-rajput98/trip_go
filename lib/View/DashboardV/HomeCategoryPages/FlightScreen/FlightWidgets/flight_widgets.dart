@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
 class TripSelector extends StatelessWidget {
+
   final int tripTypeIndex;
   final Function(int) onChanged;
-
+  final List<String> types;
   const TripSelector({
     super.key,
     required this.tripTypeIndex,
-    required this.onChanged,
+    required this.onChanged, required this.types,
   });
 
   @override
   Widget build(BuildContext context) {
-    final List<String> types = ['One Way', 'Round Trip', 'MultiCity'];
+    //final List<String> types = ['One Way', 'Round Trip', 'MultiCity'];
     return Row(
       children: List.generate(types.length, (index) {
         return Expanded(
@@ -152,7 +153,7 @@ class DateBox extends StatelessWidget {
 class TravellerBox extends StatelessWidget {
   final int travellerCount;
 
-  const TravellerBox({required this.travellerCount});
+  const TravellerBox({super.key, required this.travellerCount});
 
   @override
   Widget build(BuildContext context) {

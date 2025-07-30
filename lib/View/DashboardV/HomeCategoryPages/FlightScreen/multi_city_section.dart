@@ -7,6 +7,8 @@ import 'FlightWidgets/flight_widgets.dart';
 import 'FlightWidgets/traveller_selection_bottom_sheet.dart';
 
 class MultiCitySection extends StatefulWidget {
+  const MultiCitySection({super.key});
+
   @override
   _MultiCitySectionState createState() => _MultiCitySectionState();
 }

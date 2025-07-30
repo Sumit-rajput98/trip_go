@@ -6,7 +6,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String selectedCountry;
   final Function(String?) onCountryChanged;
 
-  DashboardAppBar({
+  DashboardAppBar({super.key, 
     required this.selectedCountry,
     required this.onCountryChanged,
   });
@@ -52,7 +52,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     padding: EdgeInsets.zero, // Remove the default padding
                     itemCount: countries.length,
                     itemBuilder: (context, index) {
-                      return Container(
+                      return SizedBox(
                         height: 36, // fixed height for uniformity and compactness
                         child: InkWell(
                           onTap: () {

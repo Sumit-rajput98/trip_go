@@ -1,132 +1,100 @@
 import 'package:flutter/material.dart';
 import 'package:trip_go/constants.dart';
+import 'package:trip_go/Model/Offers/ExclusiveOffersModel.dart';
 
 class OffersCardsWidget extends StatelessWidget {
   final String offer;
+  final List<Datum> offersList;
 
-  const OffersCardsWidget({super.key, required this.offer});
+  const OffersCardsWidget({
+    super.key,
+    required this.offer,
+    required this.offersList,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Define the number of cards to display based on the offer
-    int cardCount = offer == 'Top Offers' ? 3 : offer == 'Flights' ? 4 : 0;
-
-    // Different image URLs based on offer category
-    Map<String, List<String>> offerImages = {
-      'Top Offers': [
-        'https://img.freepik.com/free-photo/air-ticket-flight-booking-concept_53876-132674.jpg?uid=R158444821&ga=GA1.1.1838222959.1726491060&semt=ais_hybrid&w=740',
-        'https://img.freepik.com/free-photo/happy-woman-shopping-sale_1150-13902.jpg',
-        'https://img.freepik.com/free-photo/cyber-monday-sale-banner_1150-16051.jpg',
-      ],
-      'Flights': [
-        'https://img.freepik.com/free-photo/sale-with-special-discount-traveling_23-2150040398.jpg?uid=R158444821&ga=GA1.1.1838222959.1726491060&semt=ais_hybrid&w=740',
-        'https://img.freepik.com/free-photo/hand-holding-credit-card-online-shopping_1150-18942.jpg',
-        'https://img.freepik.com/free-photo/banking-internet-payment-concept_1150-16790.jpg',
-        'https://img.freepik.com/free-photo/online-payment-concept-with-coin_1150-14806.jpg',
-      ],
-    };
-
-    // Dummy text and descriptions for each card
-    List<String> descriptions = [
-      'Get the best deals this season!',
-      'Limited time offer on selected items!',
-      'Big discounts on top brands!',
-      'Exclusive offers for bank customers!',
-    ];
-
-    // "Use code" box text
-    String useCodeText = 'Use code: OFFER20';
+    if (offersList.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: Text("No offers available")),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Column(
-          children: [
-            Row(
-              children: List.generate(cardCount, (index) {
-                return Container(
-                  width: 180,
-                  height: 250,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ],
+        child: Row(
+          children: List.generate(offersList.length, (index) {
+            final offerData = offersList[index];
+
+            return Container(
+              width: 160,
+              height: 240,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 6,
+                    offset: const Offset(2, 3),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Image
-                      ClipRRect(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                        child: Image.network(
-                          offerImages[offer]?[index] ?? '',
-                          width: double.infinity,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      // Text and description
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Offer title
-                            Text(
-                              offer,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // Description
-                            Text(
-                              descriptions[index % descriptions.length],
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // "Use code" box
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: constants.themeColor1,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            useCodeText,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10,)
-                    ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    child: Image.network(
+                      offerData.image ?? '',
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                           Image.network("https://images.unsplash.com/photo-1606606124992-2dac8ce669e0?q=80&w=1241&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", width: double.infinity,height: 150, fit: BoxFit.cover,),
+                    ),
                   ),
-                );
-              }),
-            ),
-            SizedBox(height: 10,),
-          ],
+
+                  // Offer Type
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, top: 8),
+                    child: Text(
+                      offerData.offerType ?? '',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontFamily: 'poppins',
+                      ),
+                    ),
+                  ),
+
+                  
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10, top: 4),
+                    child: Text(
+                      offerData.name ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'poppins',
+                        color: Colors.black,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: 10,),
+                ],
+              ),
+            );
+          }
+          ),
+          
         ),
       ),
     );

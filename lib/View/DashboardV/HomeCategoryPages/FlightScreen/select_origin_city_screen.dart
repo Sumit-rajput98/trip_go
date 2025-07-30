@@ -33,7 +33,7 @@ class _SelectOriginCityScreenState extends State<SelectOriginCityScreen> {
       if (query.isEmpty) {
         filteredCities = [];
       } else {
-        filteredCities = (vm.cities as List<Datum>)
+        filteredCities = (vm.cities)
             .where((city) {
           return (city.cityname?.toLowerCase().contains(query) ?? false) ||
               (city.countryname?.toLowerCase().contains(query) ?? false) ||
@@ -183,6 +183,7 @@ class _SelectOriginCityScreenState extends State<SelectOriginCityScreen> {
                     },
                   ),
                 ),
+              SizedBox(height: 20,)
             ],
           );
         },

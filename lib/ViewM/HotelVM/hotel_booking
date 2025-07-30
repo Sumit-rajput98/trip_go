@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+import 'package:trip_go/Model/HotelM/hotek_booking_model.dart';
+import 'package:trip_go/AppManager/Api/api_service/hotel_booking_service.dart';
+
+class HotelBookingViewModel extends ChangeNotifier {
+  final HotelBookingService _bookingService = HotelBookingService();
+
+  HotelBookingModel? _bookingResult;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  HotelBookingModel? get bookingResult => _bookingResult;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  Future<void> bookHotel(dynamic request) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _bookingResult = null;
+    notifyListeners();
+
+    try {
+      final result = await _bookingService.bookHotels(request);
+      _bookingResult = result;
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void clear() {
+    _bookingResult = null;
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+}

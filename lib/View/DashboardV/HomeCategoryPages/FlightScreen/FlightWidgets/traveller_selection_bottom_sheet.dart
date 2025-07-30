@@ -7,7 +7,7 @@ class TravellerBottomSheet extends StatefulWidget {
   final int initialInfantsCount;
   final Function(int, int, int) onDone;
 
-  const TravellerBottomSheet({
+  const TravellerBottomSheet({super.key, 
     required this.initialAdultsCount,
     required this.initialChildrenCount,
     required this.initialInfantsCount,
@@ -213,6 +213,7 @@ class _TravellerBottomSheetState extends State<TravellerBottomSheet> {
                 setState(() => infantsCount = count);
               },
             ),
+            SizedBox(height: 40,),
           ],
         ),
       ),

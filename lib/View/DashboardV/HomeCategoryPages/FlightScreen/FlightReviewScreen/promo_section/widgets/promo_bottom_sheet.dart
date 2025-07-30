@@ -105,7 +105,7 @@ class PromoBottomSheet extends StatelessWidget {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
